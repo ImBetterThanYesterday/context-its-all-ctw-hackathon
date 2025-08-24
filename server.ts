@@ -697,6 +697,254 @@ app.delete('/api/e2b/sandbox/:sandboxId', async (req, res) => {
   }
 })
 
+// Agent endpoint - generate app from PDF URL or prompt
+app.post('/api/agent/generate', async (req, res) => {
+  let sandbox: Sandbox | null = null
+  
+  try {
+    const { pdfUrl, prompt, framework = 'html' } = req.body
+    
+    // Validate input - either pdfUrl or prompt is required
+    if (!pdfUrl && !prompt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Either pdfUrl or prompt is required'
+      })
+    }
+    
+    console.log(`🤖 Agent generating app from:`, { 
+      pdfUrl: pdfUrl ? `PDF: ${pdfUrl}` : null, 
+      prompt: prompt ? `Prompt: ${prompt.substring(0, 50)}...` : null,
+      framework 
+    })
+    
+    let finalPrompt = ''
+    let documentData: any = null
+    
+    // Step 1: Process input source
+    if (pdfUrl) {
+      console.log(`📄 Processing PDF from URL: ${pdfUrl}`)
+      
+      try {
+        // Download PDF from URL
+        const pdfResponse = await fetch(pdfUrl)
+        if (!pdfResponse.ok) {
+          throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`)
+        }
+        
+        const pdfBuffer = await pdfResponse.arrayBuffer()
+        const pdfBase64 = Buffer.from(pdfBuffer).toString('base64')
+        
+        // Process with Gemini
+        if (!process.env.GEMINI_API_KEY) {
+          throw new Error('GEMINI_API_KEY not configured')
+        }
+        
+        const { GoogleGenerativeAI } = await import('@google/generative-ai')
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
+
+        const extractionPrompt = `
+Analiza este documento PDF y extrae información estructurada para crear una aplicación web.
+
+Estructura el análisis de la siguiente manera:
+{
+  "appType": "tipo de aplicación (ecommerce, dashboard, landing, etc.)",
+  "title": "título de la aplicación",
+  "description": "descripción detallada de la aplicación",
+  "features": [
+    "lista de funcionalidades principales que debe tener la app"
+  ],
+  "uiComponents": [
+    "componentes UI específicos necesarios (navbar, cards, forms, etc.)"
+  ],
+  "pages": [
+    {
+      "name": "nombre de la página",
+      "description": "descripción de la página",
+      "components": ["componentes específicos de esta página"]
+    }
+  ],
+  "designRequirements": {
+    "style": "estilo visual requerido",
+    "colors": "esquema de colores sugerido",
+    "layout": "tipo de layout requerido"
+  }
+}
+
+IMPORTANTE:
+- Si hay wireframes o mockups, describe cada pantalla en detalle
+- Identifica todos los elementos UI visibles
+- Extrae flujos de usuario paso a paso
+- Si el documento está en español, mantén el contenido en español
+- Responde ÚNICAMENTE con el JSON válido, sin texto adicional.
+`
+
+        const imagePart = {
+          inlineData: {
+            data: pdfBase64,
+            mimeType: 'application/pdf',
+          },
+        }
+
+        console.log('🔍 Analyzing PDF with Gemini...')
+        const result = await model.generateContent([extractionPrompt, imagePart])
+        const response = await result.response
+        const text = response.text()
+
+        // Parse Gemini response
+        try {
+          const jsonMatch = text.match(/\{[\s\S]*\}/)
+          const jsonText = jsonMatch ? jsonMatch[0] : text
+          documentData = JSON.parse(jsonText)
+          console.log('✅ PDF analyzed successfully with Gemini')
+        } catch (parseError) {
+          console.warn('⚠️ Failed to parse Gemini JSON, using raw text')
+          documentData = {
+            appType: 'web-app',
+            title: 'Generated App',
+            description: text.substring(0, 200),
+            features: ['Feature extracted from document'],
+            uiComponents: ['Basic UI components'],
+            pages: [{ name: 'Home', description: 'Main page', components: ['header', 'content'] }]
+          }
+        }
+
+        // Create enhanced prompt based on document analysis
+        finalPrompt = `Crear una aplicación web completa basada en el siguiente análisis de documento:
+
+TIPO DE APLICACIÓN: ${documentData.appType}
+TÍTULO: ${documentData.title}
+DESCRIPCIÓN: ${documentData.description}
+
+FUNCIONALIDADES REQUERIDAS:
+${documentData.features?.map((f: string) => `- ${f}`).join('\n') || '- Funcionalidad básica'}
+
+COMPONENTES UI NECESARIOS:
+${documentData.uiComponents?.map((c: string) => `- ${c}`).join('\n') || '- Componentes básicos'}
+
+PÁGINAS:
+${documentData.pages?.map((p: any) => `- ${p.name}: ${p.description}`).join('\n') || '- Página principal'}
+
+REQUISITOS DE DISEÑO:
+${documentData.designRequirements ? JSON.stringify(documentData.designRequirements, null, 2) : 'Diseño moderno y responsive'}
+
+Crea una aplicación web completa, funcional y responsiva que implemente todos estos requerimientos.`
+
+      } catch (pdfError) {
+        console.error('❌ PDF processing failed:', pdfError)
+        return res.status(500).json({
+          success: false,
+          error: `Failed to process PDF: ${pdfError instanceof Error ? pdfError.message : 'Unknown error'}`,
+          message: 'PDF processing failed'
+        })
+      }
+    } else {
+      // Use prompt directly
+      finalPrompt = prompt
+      console.log(`💬 Using direct prompt: ${prompt.substring(0, 100)}...`)
+    }
+    
+    // Step 2: Create sandbox and generate app
+    console.log(`🚀 Creating sandbox for app generation...`)
+    
+    sandbox = await Sandbox.create({ 
+      timeoutMs: 5 * 60 * 1000 // 5 minutes
+    })
+    const sandboxId = sandbox.sandboxId
+    activeSandboxes.set(sandboxId, sandbox)
+    
+    sandboxMetadata.set(sandboxId, {
+      createdAt: new Date(),
+      lastActivity: new Date()
+    })
+    
+    console.log(`📦 Sandbox created: ${sandboxId}`)
+    
+    // Step 3: Generate code with Claude
+    console.log(`🧠 Generating code with Claude...`)
+    const generatedHTML = await generateCodeWithClaude(finalPrompt, framework)
+    
+    // Step 4: Create project and deploy
+    const projectName = generateProjectName(documentData?.title || finalPrompt)
+    const projectPath = `/home/user/${projectName}`
+    
+    console.log(`📁 Creating project: ${projectName}`)
+    
+    await sandbox.commands.run(`cd /home/user && mkdir -p ${projectName}`, {
+      timeoutMs: 30000
+    })
+    
+    await sandbox.files.write(`${projectPath}/index.html`, generatedHTML)
+    console.log(`📝 HTML file created`)
+    
+    // Step 5: Start HTTP server
+    console.log(`🚀 Starting HTTP server...`)
+    const port = 3000
+    const serverCommand = `cd ${projectPath} && python3 -m http.server ${port} --bind 0.0.0.0`
+    
+    const devServerProcess = sandbox.commands.run(serverCommand, {
+      background: true,
+      timeoutMs: 0,
+      onStdout: (data) => console.log(`🖥️ Server: ${data.trim()}`),
+      onStderr: (data) => console.log(`🖥️ Server error: ${data.trim()}`)
+    })
+    
+    // Wait for server to be ready
+    await new Promise(resolve => setTimeout(resolve, 5000))
+    
+    const appUrl = `https://${sandbox.getHost(port)}`
+    
+    console.log(`✅ App generated successfully: ${appUrl}`)
+    
+    // Step 6: Return response
+    res.json({
+      success: true,
+      appUrl,
+      sandboxId,
+      projectName,
+      framework,
+      sourceType: pdfUrl ? 'pdf' : 'prompt',
+      sourceData: {
+        pdfUrl: pdfUrl || null,
+        prompt: prompt || null,
+        documentAnalysis: documentData
+      },
+      generatedAt: new Date().toISOString(),
+      message: 'Application generated successfully from agent'
+    })
+    
+  } catch (error) {
+    console.error('❌ Agent generation failed:', error)
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('❌ Error details:', {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    })
+    
+    // Cleanup sandbox on error
+    if (sandbox) {
+      try {
+        console.log('🧹 Cleaning up failed sandbox...')
+        await sandbox.kill()
+        activeSandboxes.delete(sandbox.sandboxId)
+        sandboxMetadata.delete(sandbox.sandboxId)
+        console.log('✅ Sandbox cleanup completed')
+      } catch (cleanupError) {
+        console.error('⚠️ Sandbox cleanup failed:', cleanupError)
+      }
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+      message: 'Failed to generate application with agent',
+      timestamp: new Date().toISOString()
+    })
+  }
+})
+
 // Helper functions
 function generateProjectName(prompt: string): string {
   const words = prompt.toLowerCase()
@@ -1012,8 +1260,12 @@ app.listen(port, () => {
   console.log(`   GET  /health`)
   console.log(`   POST /api/chat`)
   console.log(`   POST /api/analyze-document`)
+  console.log(`   POST /api/gemini/process-document`)
+  console.log(`   POST /api/gemini/chat`)
   console.log(`   POST /api/e2b/sandbox`)
   console.log(`   POST /api/e2b/generate`)
+  console.log(`   POST /api/e2b/modify/:sandboxId`)
+  console.log(`   POST /api/agent/generate 🆕`)
   console.log(`   GET  /api/e2b/sandboxes`)
   console.log(`   DELETE /api/e2b/sandbox/:sandboxId`)
 })

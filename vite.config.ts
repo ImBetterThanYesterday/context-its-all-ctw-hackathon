@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
@@ -19,12 +19,12 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  define: {
-    global: 'globalThis',
-    'process.env': {},
-    exports: '{}',
-    module: '{}',
-  },
+  // define: {
+  //   global: 'globalThis',
+  //   'process.env': {},
+  //   exports: '{}',
+  //   module: '{}',
+  // },
   optimizeDeps: {
     exclude: [
       'dotenv', 
