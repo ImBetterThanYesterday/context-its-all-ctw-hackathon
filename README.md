@@ -27,13 +27,13 @@ Su nombre, "Context is all", refleja su capacidad para utilizar inteligentemente
 
 🚀 Arquitectura Optimizada: El backend maneja toda la lógica pesada con las APIs de IA y E2B, mientras que el frontend (React/Vite) ofrece una experiencia de usuario fluida y rápida.
 
-🛠️ Stack Tecnológico
+# . 🛠️ Stack Tecnológico
 Área	Tecnología
 Frontend	React, Vite, TypeScript, Tailwind CSS, shadcn/ui, Radix UI, React Router
 Backend	Node.js, Express, TypeScript, tsx
 IA y Servicios	Anthropic Claude 4 Sonnet, Google Gemini 2.0 Flash, E2B Code Interpreter
 Herramientas	ESLint, Prettier, Concurrently, Vite
-🏗️ Arquitectura del Sistema
+# . 🏗️ Arquitectura del Sistema
 
 El flujo de trabajo está diseñado para ser seguro y eficiente, separando las preocupaciones entre el cliente y el servidor.
 
@@ -59,11 +59,11 @@ URL de Vista Previa (E2B): El backend devuelve una URL de vista previa segura.
 
 Usuario (Frontend): La URL se carga en un iframe en el panel de vista previa, mostrando la aplicación funcional en tiempo real.
 
-🚀 Empezando
+# . 🚀 Empezando
 
 Sigue estos pasos para configurar y ejecutar el proyecto en tu entorno local.
 
-Prerrequisitos
+# . Prerrequisitos
 
 Node.js (v18 o superior)
 
@@ -152,27 +152,12 @@ expand_less
 IGNORE_WHEN_COPYING_START
 IGNORE_WHEN_COPYING_END
 npm run dev
+
 🔌 Endpoints de la API del Backend
 
 El servidor de Express expone los siguientes endpoints:
 
-Método	Ruta	Descripción
 
-├── public/                  # Archivos estáticos
-├── src/                     # Código fuente de la aplicación Frontend
-│   ├── components/          # Componentes de React
-│   │   ├── UXForgeDashboard.tsx  # Dashboard principal
-│   │   ├── LovableChatInterface.tsx # Componente central de chat con IA
-│   │   └── ui/              # Componentes de shadcn/ui
-│   ├── contexts/            # React Contexts (Auth, Theme)
-│   ├── lib/                 # Lógica de negocio y servicios
-│   │   ├── api-service.ts   # Cliente para la API del backend
-│   │   ├── smart-context-manager.ts # Lógica de contexto de IA
-│   │   └── chat-persistence.ts # Manejo de la sesión de chat
-│   └── pages/               # Páginas de la aplicación (Login, Dashboard)
-├── server.ts                # Servidor de Backend (Node.js/Express)
-├── package.json             # Dependencias y scripts
-└── README.md                # Este archivo
 🤝 Contribuciones
 
 Las contribuciones son bienvenidas. Por favor, abre un "issue" para discutir cambios importantes antes de realizar un "pull request".
