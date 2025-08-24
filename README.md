@@ -157,14 +157,22 @@ npm run dev
 El servidor de Express expone los siguientes endpoints:
 
 Método	Ruta	Descripción
-GET	/health	Comprueba el estado del servidor y el número de sandboxes activos.
-POST	/api/chat	Maneja las respuestas de chat conversacional con Claude.
-POST	/api/analyze-document	Analiza documentos PRD utilizando Claude.
-POST	/api/gemini/process-document	(Nuevo) Procesa PDFs/imágenes con Gemini para extraer datos estructurados.
-POST	/api/e2b/generate	(Optimizado) Genera una aplicación web completa en un sandbox de E2B.
-POST	/api/e2b/modify/:id	Modifica el código en un sandbox existente.
-GET	/api/e2b/sandboxes	Lista todos los sandboxes de E2B activos.
-DELETE	/api/e2b/sandbox/:id	Termina un sandbox específico por su ID.
+
+├── public/                  # Archivos estáticos
+├── src/                     # Código fuente de la aplicación Frontend
+│   ├── components/          # Componentes de React
+│   │   ├── UXForgeDashboard.tsx  # Dashboard principal
+│   │   ├── LovableChatInterface.tsx # Componente central de chat con IA
+│   │   └── ui/              # Componentes de shadcn/ui
+│   ├── contexts/            # React Contexts (Auth, Theme)
+│   ├── lib/                 # Lógica de negocio y servicios
+│   │   ├── api-service.ts   # Cliente para la API del backend
+│   │   ├── smart-context-manager.ts # Lógica de contexto de IA
+│   │   └── chat-persistence.ts # Manejo de la sesión de chat
+│   └── pages/               # Páginas de la aplicación (Login, Dashboard)
+├── server.ts                # Servidor de Backend (Node.js/Express)
+├── package.json             # Dependencias y scripts
+└── README.md                # Este archivo
 🤝 Contribuciones
 
 Las contribuciones son bienvenidas. Por favor, abre un "issue" para discutir cambios importantes antes de realizar un "pull request".
