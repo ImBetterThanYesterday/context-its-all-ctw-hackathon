@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .game-container {
+            text-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        
+        .game-info {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            color: #555;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            margin: 20px auto;
+            background: #333;
+            padding: 5px;
+            border-radius: 10px;
+        }
+        
+        .cell {
+            background: white;
+            border: none;
+            font-size: 2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 5px;
+        }
+        
+        .cell:hover {
+            background: #f0f0f0;
+            transform: scale(1.05);
+        }
+        
+        .cell.x {
+            color: #e74c3c;
+        }
+        
+        .cell.o {
+            color: #3498db;
+        }
+        
+        .cell:disabled {
+            cursor: not-allowed;
+        }
+        
+        .reset-btn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .reset-btn:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+        
+        .winner {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2ecc71;
+            margin-top: 15px;
+        }
+        
+        .draw {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #f39c12;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Tic Tac Toe</h1>
+        <div class="game-info">
+            <div id="current-player">Current Player: <span id="player-display">X</span></div>
+        </div>
+        <div class="board" id="board">
+            <button class="cell" data-index="0"></button>
+            <button class="cell" data-index="1"></button>
+            <button class="cell" data-index="2"></button>
+            <button class="cell" data-index="3"></button>
+            <button class="cell" data-index="4"></button>
+            <button class="cell" data-index="5"></button>
+            <button class="cell" data-index="6"></button>
+            <button class="cell" data-index="7"></button>
+            <button class="cell" data-index="8"></button>
+        </div>
+        <button class="reset-btn" onclick="resetGame()">Reset Game</button>
+        <div id="game-result"></div>
+    </div>
+
+    <script>
+        let currentPlayer = 'X';
+        let gameBoard = ['', '', '', '', '', '', '', '', ''];
+        let gameActive = true;
+
+        const winningConditions = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        function handleCellClick(event) {
+            const clickedCell = event.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+            if (gameBoard[clickedCellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            gameBoard[clickedCellIndex] = currentPlayer;
+            clickedCell.textContent = currentPlayer;
+            clickedCell.classList.add(currentPlayer.toLowerCase());
+            clickedCell.disabled = true;
+
+            checkResult();
+        }
+
+        function checkResult() {
+            let roundWon = false;
+            
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = gameBoard[winCondition[0]];
+                let b = gameBoard[winCondition[1]];
+                let c = gameBoard[winCondition[2]];
+                
+                if (a === '' || b === '' || c === '') {
+                    continue;
+                }
+                
+                if (a === b && b === c) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                document.getElementById('game-result').innerHTML = `<div class="winner">Player ${currentPlayer} Wins!</div>`;
+                gameActive = false;
+                disableAllCells();
+                return;
+            }
+
+            let roundDraw = !gameBoard.includes('');
+            if (roundDraw) {
+                document.getElementById('game-result').innerHTML = '<div class="draw">Game Draw!</div>';
+                gameActive = false;
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            document.getElementById('player-display').textContent = currentPlayer;
+        }
+
+        function disableAllCells() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.disabled = true;
+            });
+        }
+
+        function resetGame() {
+            currentPlayer = 'X';
+            gameBoard = ['', '', '', '', '', '', '', '', ''];
+            gameActive = true;
+            
+            document.getElementById('player-display').textContent = currentPlayer;
+            document.getElementById('game-result').innerHTML = '';
+            
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.disabled = false;
+                cell.classList.remove('x', 'o');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.addEventListener('click', handleCellClick);
+            });
+        });
+    </script>
+</body>
+</html>

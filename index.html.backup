@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rappi Creator - Convierte tu PRD en pantallas funcionales</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            color: #333333;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: #ffffff;
+            border-bottom: 1px solid #f0f0f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #FF5722;
+        }
+
+        .logo::before {
+            content: "🥸";
+            margin-right: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #666666;
+            text-decoration: none;
+            font-weight: 400;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #FF5722;
+        }
+
+        .nav-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .credits-btn {
+            background: #FF5722;
+            border: 1px solid #FF5722;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .credits-btn:hover {
+            background: #E64A19;
+            border-color: #E64A19;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4rem 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            min-height: calc(100vh - 100px);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+        }
+
+        .hero h1 .lovable {
+            background: linear-gradient(45deg, #FF5722, #FF6B35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        .input-container {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .main-input {
+            width: 100%;
+            padding: 1.5rem 2rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 20px;
+            background: #f8f9fa;
+            color: #333333;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .main-input:focus {
+            outline: none;
+            border-color: #FF5722;
+            background: #ffffff;
+            box-shadow: 0 8px 32px rgba(255, 87, 34, 0.15);
+        }
+
+        .main-input::placeholder {
+            color: #999999;
+        }
+
+
+        .generate-btn {
+            background: linear-gradient(45deg, #FF5722, #FF6B35);
+            border: none;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            margin-top: 1rem;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            max-width: 200px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(255, 87, 34, 0.4);
+        }
+
+        .file-upload-area {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 2px dashed #e9ecef;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .file-upload-area:hover {
+            border-color: #FF5722;
+            background: #fff;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #FF5722;
+            background: #fff5f5;
+        }
+
+        .file-upload-text {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .attachment-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            align-items: center;
+        }
+
+        .attachment-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            color: #666;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .attachment-btn:hover {
+            background: #e9ecef;
+            border-color: #FF5722;
+            color: #FF5722;
+        }
+
+        .uploaded-files {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .file-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-preview .file-icon {
+            font-size: 1.2rem;
+        }
+
+        .file-preview .file-info {
+            flex: 1;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .file-preview .remove-file {
+            cursor: pointer;
+            color: #999;
+            font-size: 1rem;
+        }
+
+        .file-preview .remove-file:hover {
+            color: #FF5722;
+        }
+
+        .output-section {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: none;
+        }
+
+        .output-container {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .output-status {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 87, 34, 0.3);
+            border-top: 2px solid #FF5722;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero {
+                padding: 2rem 1rem;
+            }
+            
+            .input-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">Rappi Creator</div>
+        <ul class="nav-links">
+            <li><a href="#inicio">Inicio</a></li>
+            <li><a href="#proyectos">Proyectos</a></li>
+            <li><a href="#plantillas">Plantillas</a></li>
+            <li><a href="#documentacion">Documentación</a></li>
+            <li><a href="#nosotros">Nosotros</a></li>
+        </ul>
+        <div class="nav-right">
+            <button class="credits-btn">✨ NUEVO PROYECTO</button>
+        </div>
+    </nav>
+
+    <main class="hero">
+        <h1>Convierte tu <span class="lovable">PRD</span><br>en pantallas <span class="lovable">funcionales</span></h1>
+        <p>Rappi Creator: La herramienta definitiva con IA para transformar documentos en interfaces automáticamente.</p>
+        
+        <div class="input-container">
+            <input 
+                type="text" 
+                class="main-input" 
+                placeholder="Describe tu PRD o sube un documento..."
+                id="promptInput"
+            >
+            
+            <div class="attachment-actions">
+                <button class="attachment-btn" onclick="triggerFileUpload()">
+                    <span>📎</span> Adjuntar archivo
+                </button>
+                <button class="attachment-btn" onclick="triggerImageUpload()">
+                    <span>🖼️</span> Subir imagen
+                </button>
+            </div>
+
+            <div class="file-upload-area" id="fileUploadArea" onclick="triggerFileUpload()">
+                <div class="file-upload-text">
+                    Arrastra y suelta archivos aquí o haz clic para seleccionar<br>
+                    <small>Soporta: PDF, JPG, PNG, DOC, DOCX</small>
+                </div>
+            </div>
+
+            <input type="file" 
+                   id="fileInput" 
+                   class="file-input" 
+                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" 
+                   multiple 
+                   onchange="handleFileSelect(event)">
+            
+            <input type="file" 
+                   id="imageInput" 
+                   class="file-input" 
+                   accept=".jpg,.jpeg,.png,.gif,.webp" 
+                   multiple 
+                   onchange="handleFileSelect(event)">
+
+            <div class="uploaded-files" id="uploadedFiles"></div>
+            
+            <button class="generate-btn" onclick="generateApp()">
+                Generar Interfaz
+            </button>
+        </div>
+    </main>
+
+    <section class="output-section" id="outputSection">
+        <div class="output-container">
+            <div class="output-header">
+                <div class="output-status" id="outputStatus">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Generating your app...
+                    </div>
+                </div>
+            </div>
+            <div id="outputContent"></div>
+        </div>
+    </section>
+
+    <script>
+        let uploadedFiles = [];
+
+        function triggerFileUpload() {
+            document.getElementById('fileInput').click();
+        }
+
+        function triggerImageUpload() {
+            document.getElementById('imageInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            files.forEach(file => addFile(file));
+            updateFileDisplay();
+        }
+
+        function addFile(file) {
+            const fileInfo = {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                file: file
+            };
+            uploadedFiles.push(fileInfo);
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFileDisplay();
+        }
+
+        function updateFileDisplay() {
+            const container = document.getElementById('uploadedFiles');
+            
+            if (uploadedFiles.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+            container.innerHTML = uploadedFiles.map((file, index) => `
+                <div class="file-preview">
+                    <span class="file-icon">${getFileIcon(file.type)}</span>
+                    <div class="file-info">
+                        <div>${file.name}</div>
+                        <small>${formatFileSize(file.size)}</small>
+                    </div>
+                    <span class="remove-file" onclick="removeFile(${index})">×</span>
+                </div>
+            `).join('');
+        }
+
+        function getFileIcon(type) {
+            if (type.includes('pdf')) return '📄';
+            if (type.includes('image')) return '🖼️';
+            if (type.includes('word') || type.includes('doc')) return '📝';
+            return '📎';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Drag and drop functionality
+        const fileUploadArea = document.getElementById('fileUploadArea');
+
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            files.forEach(file => addFile(file));
+            updateFileDisplay();
+        });
+
+        async function generateApp() {
+            const prompt = document.getElementById('promptInput').value.trim();
+            
+            if (!prompt && uploadedFiles.length === 0) {
+                alert('Por favor ingresa una descripción o sube un archivo');
+                return;
+            }
+
+            // Show output section
+            const outputSection = document.getElementById('outputSection');
+            const outputStatus = document.getElementById('outputStatus');
+            const outputContent = document.getElementById('outputContent');
+            
+            outputSection.style.display = 'block';
+            outputStatus.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Generando interfaz desde "${prompt || 'archivos subidos'}"...
+                </div>
+            `;
+            outputContent.innerHTML = '';
+
+            try {
+                // Prepare data for Claude Code SDK
+                const requestData = {
+                    prompt: prompt,
+                    files: uploadedFiles.map(f => ({
+                        name: f.name,
+                        type: f.type,
+                        size: f.size
+                    }))
+                };
+
+                // Call our Claude Code SDK function
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    outputStatus.innerHTML = '✅ Interfaz generada exitosamente!';
+                    outputContent.innerHTML = `
+                        <p>Tu interfaz ha sido generada y guardada en el directorio del proyecto.</p>
+                        <p><strong>Prompt:</strong> ${prompt}</p>
+                        ${uploadedFiles.length > 0 ? `<p><strong>Archivos procesados:</strong> ${uploadedFiles.length}</p>` : ''}
+                        <p>Revisa tu sistema de archivos para ver los archivos generados.</p>
+                    `;
+                } else {
+                    throw new Error('Generation failed');
+                }
+            } catch (error) {
+                outputStatus.innerHTML = '❌ Error en la generación';
+                outputContent.innerHTML = `
+                    <p>Lo sentimos, hubo un error generando tu interfaz.</p>
+                    <p>Por ahora, esta es una interfaz de demostración. La integración con Claude Code SDK se agregará en el siguiente paso.</p>
+                `;
+            }
+        }
+
+        // Allow Enter key to trigger generation
+        document.getElementById('promptInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateApp();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend API Connection Test</title>
+</head>
+<body>
+    <h1>Frontend API Connection Test</h1>
+    <button onclick="testAPI()">Test Backend Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                console.log('Testing connection to backend...');
+                
+                const response = await fetch('http://localhost:3001/health');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h3>✅ SUCCESS!</h3>
+                    <p>Backend is reachable from frontend</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                console.log('✅ Backend connection successful:', data);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>❌ ERROR!</h3>
+                    <p>Cannot reach backend</p>
+                    <pre>${error.message}</pre>
+                `;
+                
+                console.error('❌ Backend connection failed:', error);
+            }
+        }
+        
+        // Auto test on load
+        window.onload = () => {
+            setTimeout(testAPI, 1000);
+        };
+    </script>
+</body>
+</html>

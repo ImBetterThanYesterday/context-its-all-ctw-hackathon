@@ -1,0 +1,2850 @@
+# E2B Documentation
+
+Aquí encontrarás todas las guías, conceptos y referencias de SDK para desarrollar con E2B.
+
+Generated bash
+
+      `# Instalar el intérprete de código
+# En la imagen se muestra la pestaña de JavaScript & TypeScript
+npm i @e2b/code-interpreter`
+
+## What is E2B?
+
+E2B es una infraestructura **open-source** que te permite ejecutar código generado por IA en sandboxes (entornos de prueba) seguros y aislados en la nube. Para iniciar y controlar los sandboxes, utiliza nuestro **Python SDK** o **JavaScript SDK**.
+
+Algunos de los casos de uso típicos de E2B son el análisis o visualización de datos con IA, la ejecución de código generado por IA en varios lenguajes, un *playground* para agentes de codificación, un entorno para evaluaciones de *codegen* (generación de código) o la ejecución de aplicaciones completas generadas por IA como en [Fragments](https://www.google.com/url?sa=E&q=https%3A%2F%2Ffragments.e2b.dev%2F).
+
+## Under the hood (Cómo funciona por dentro)
+
+El Sandbox de E2B es una pequeña máquina virtual (VM) aislada que se puede iniciar muy rápidamente (~150ms). Puedes pensar en él como un pequeño ordenador para el modelo de IA. Puedes ejecutar muchos sandboxes a la vez. Normalmente, se ejecuta un sandbox separado para cada LLM, usuario o sesión de agente de IA en tu aplicación. Por ejemplo, si estuvieras creando un chatbot de análisis de datos con IA, iniciarías un sandbox para cada sesión de usuario.
+
+---
+
+## Quickstart (Inicio rápido)
+
+- **Running your first Sandbox**
+    - Aprende a iniciar tu primer Sandbox de E2B con nuestro SDK de Python o JavaScript.
+- **Connecting LLMs to E2B**
+    - Conecta tu LLM favorito a E2B para ejecutar código generado por IA dentro del Sandbox.
+- **Uploading & downloading files**
+    - Una guía rápida sobre cómo subir y bajar archivos desde y hacia el Sandbox.
+- **Install custom packages**
+    - Personaliza tu Sandbox con paquetes de terceros.
+
+## Code interpreting with AI (Interpretación de código con IA)
+
+- **Analyze data with AI**
+    - Aprende a usar E2B para ejecutar código generado por IA para analizar tus datos.
+- **Create charts & visualizations**
+    - Crea gráficos interactivos ejecutando código Python en E2B.
+
+## Learn the core concepts (Aprende los conceptos clave)
+
+- **Sandbox lifecycle**
+    - Aprende cómo iniciar el sandbox, gestionar su ciclo de vida e interactuar con él.
+- **Sandbox persistence**
+    - Aprende a lograr la persistencia de datos pausando y reanudando los sandboxes.
+- **Filesystem**
+    - El Sandbox tiene un sistema de archivos aislado que puedes usar para crear, leer, escribir y eliminar archivos.
+- **Commands**
+    - Ejecuta comandos de terminal dentro del Sandbox e inicia cualquier proceso dentro de él.
+
+---
+
+# Running your first Sandbox
+
+Esta guía te mostrará cómo iniciar tu primer Sandbox de E2B.
+
+### 1. Create E2B account
+
+Cada nueva cuenta de E2B obtiene $100 en créditos. Puedes registrarte [aquí](https://e2b.dev/docs/getting-started/running-sandbox).
+
+### 2. Set your environment variables
+
+1. Navega al [Dashboard de E2B](https://e2b.dev/dashboard).
+2. Copia tu clave API.
+3. Pega tu clave API de E2B en tu archivo `.env`.
+
+**.env**
+
+```
+E2B_API_KEY=e2b_***
+
+```
+
+### 3. Install E2B SDK
+
+Instala el SDK de E2B en tu proyecto ejecutando el siguiente comando en tu terminal.
+
+**Terminal (JavaScript & TypeScript)**
+
+```bash
+npm i @e2b/code-interpreter dotenv
+
+```
+
+### 4. Write code for starting Sandbox
+
+Escribiremos el código mínimo para iniciar un Sandbox, ejecutar Python dentro de él y listar todos los archivos dentro del directorio raíz.
+
+**index.ts (JavaScript & TypeScript)**
+
+```tsx
+import 'dotenv/config'
+import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = await Sandbox.create() // Por defecto, el sandbox está activo durante 5 minutos
+const execution = await sbx.runCode('print("hello world")') // Ejecuta Python dentro del sandbox
+console.log(execution.logs)
+
+const files = await sbx.files.list('/')
+console.log(files)
+
+```
+
+### 5. Start your first E2B Sandbox
+
+Ejecuta el código con el siguiente comando:
+
+**Terminal (JavaScript & TypeScript)**
+
+```bash
+npx tsx ./index.ts
+
+```
+
+# Connect LLMs to E2B
+
+E2B puede funcionar con cualquier LLM y framework de IA. La forma más fácil de conectar un LLM a E2B es usar las capacidades de uso de herramientas del LLM (a veces conocidas como *function calling*).
+
+Si el LLM no admite el uso de herramientas, puedes, por ejemplo, indicarle al LLM que genere fragmentos de código y luego extraer manualmente los fragmentos de código con RegEx.
+
+**Contents**
+
+- OpenAI
+- Anthropic
+- Mistral
+- Groq
+- Vercel AI SDK
+- CrewAI
+- LangChain
+- LlamaIndex
+- Ollama
+- Hugging Face
+
+---
+
+## Anthropic
+
+### Simple
+
+Generated python
+
+      `# pip install anthropic e2b-code-interpreter
+from anthropic import Anthropic
+from e2b_code_interpreter import Sandbox
+
+# Create Anthropic client
+client = Anthropic()
+model = "claude-3-5-sonnet-20240620"
+
+system_prompt = "You are a helpful assistant that can execute python code in a jupyter notebook. Only respond with the code to execute."
+prompt = "Calculate how many r's are in the word 'strawberry'"
+
+# Send messages to Anthropic API
+response = client.messages.create(
+    model=model,
+    max_tokens=1024,
+    messages=[
+        {"role": "assistant", "content": system_prompt},
+        {"role": "user", "content": prompt}
+    ]
+)
+
+# Extract code from response
+code = response.content[0].text
+
+# Execute code in E2B Sandbox
+with Sandbox() as sandbox:
+    execution = sandbox.run_code(code)
+    result = execution.logs.stdout
+
+print(result)`
+
+### Function calling
+
+Generated python
+
+      `# pip install anthropic e2b-code-interpreter
+from anthropic import Anthropic
+from e2b_code_interpreter import Sandbox
+
+# Create Anthropic client
+client = Anthropic()
+model = "claude-3-5-sonnet-20240620"
+
+# Define the messages
+messages = [
+    {
+        "role": "user",
+        "content": "Calculate how many r's are in the word 'strawberry'"
+    }
+]
+
+# Define the tools
+tools = [{
+    "name": "execute_python",
+    "description": "Execute python code in a jupyter notebook cell and return (not print) the result",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "code": {
+                "type": "string",
+                "description": "The python code to execute in a single cell"
+            }
+        },
+        "required": ["code"]
+    }
+}]
+
+# Generate text with Anthropic
+message = client.messages.create(
+    model=model,
+    max_tokens=1024,
+    messages=messages,
+    tools=tools
+)
+
+# Append the response message to the messages list
+messages.append(
+    {"role": "assistant", "content": message.content}
+)
+
+# Execute tool use if it's called by the model
+if message.stop_reason == "tool_use":
+    tool_use = next(block for block in message.content if block.type == "tool_use")
+    tool_name = tool_use.name
+    tool_input = tool_use.input
+
+    if tool_name == "execute_python":
+        with Sandbox() as sandbox:
+            code = tool_input['code']
+            execution = sandbox.run_code(code)
+            result = execution.text
+
+    # Append the tool result to the messages list
+    messages.append({
+        "role": "user",
+        "content": [
+            {
+                "type": "tool_result",
+                "tool_use_id": tool_use.id,
+                "content": result,
+            },
+        ],
+    })
+
+    # Compute the final response
+    final_response = client.messages.create(
+        model=model,
+        max_tokens=1024,
+        messages=messages,
+        tools=tools
+    )
+
+print(final_response.content[0].text)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Python
+
+IGNORE_WHEN_COPYING_END
+
+# Upload & downloads files
+
+E2B Sandbox te permite subir y bajar archivos hacia y desde el Sandbox.
+
+Una forma alternativa de llevar tus datos al sandbox es crear una [plantilla de sandbox personalizada](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Fsandbox-templates%2Foverview).
+
+## Upload file
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Leer archivo local relativo al directorio de trabajo actual
+const content = fs.readFileSync('local/file')
+
+const sbx = await Sandbox.create()
+// Subir archivo al sandbox a la ruta absoluta '/home/user/my-file'
+await sbx.files.write('/home/user/my-file', content)`
+
+## Upload multiple files
+
+Actualmente, si quieres subir múltiples archivos, necesitas subir cada uno por separado. Estamos trabajando en una mejor solución.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Leer archivo local relativo al directorio de trabajo actual
+const fileA = fs.readFileSync('local/file/a')
+const fileB = fs.readFileSync('local/file/b')
+
+const sbx = await Sandbox.create()
+// Subir archivo A al sandbox a la ruta absoluta '/home/user/my-file-a'
+await sbx.files.write('/home/user/my-file-a', fileA)
+// Subir archivo B al sandbox a la ruta absoluta '/home/user/my-file-b'
+await sbx.files.write('/home/user/my-file-b', fileB)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Upload directory
+
+Actualmente no soportamos una forma fácil de subir un directorio completo. Necesitas subir cada archivo por separado.
+
+Estamos trabajando en una mejor solución.
+
+## Download file
+
+Para descargar un archivo, primero necesitas obtener su contenido y luego escribirlo en un archivo local.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = await Sandbox.create()
+// Descargar archivo del sandbox desde la ruta absoluta '/home/user/my-file'
+const content = await sbx.files.read('/home/user/my-file')
+// Escribir archivo en la ruta local relativa al directorio de trabajo actual
+fs.writeFileSync('local/file', content)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Download multiple files
+
+Para descargar múltiples archivos, necesitas descargar cada uno por separado desde el sandbox.
+
+Estamos trabajando en una mejor solución.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = await Sandbox.create()
+// Descargar archivo A del sandbox desde la ruta absoluta '/home/user/my-file-a'
+const contentA = await sbx.files.read('/home/user/my-file-a')
+// Escribir archivo A en la ruta local relativa al directorio de trabajo actual
+fs.writeFileSync('local/file/a', contentA)
+
+// Descargar archivo B del sandbox desde la ruta absoluta '/home/user/my-file-b'
+const contentB = await sbx.files.read('/home/user/my-file-b')
+// Escribir archivo B en la ruta local relativa al directorio de trabajo actual
+fs.writeFileSync('local/file/b', contentB)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Download directory
+
+Actualmente no soportamos una forma fácil de descargar un directorio completo. Necesitas descargar cada archivo por separado.
+
+Estamos trabajando en una mejor solución.
+
+# Install custom packages
+
+Hay dos maneras de instalar paquetes personalizados en el Sandbox de E2B.
+
+1. [Crear un sandbox personalizado con paquetes preinstalados](https://www.notion.so/E2B-Documentation-22f5eb9a65a5809ba29ec115efdc7b9c?pvs=21).
+2. [Instalar paquetes durante el tiempo de ejecución del sandbox](https://www.notion.so/E2B-Documentation-22f5eb9a65a5809ba29ec115efdc7b9c?pvs=21).
+
+---
+
+## Create a custom sandbox
+
+Usa esta opción si sabes de antemano qué paquetes necesitarás en el sandbox.
+
+**Prerrequisitos:**
+
+- E2B CLI
+- Docker en ejecución
+
+> ℹ️ Una plantilla de sandbox personalizada es una imagen de Docker que convertimos automáticamente en un sandbox que luego puedes iniciar con nuestro SDK.
+> 
+
+### 1. Install E2B CLI
+
+**Usando Homebrew (en macOS)**
+
+```bash
+brew install e2b
+
+```
+
+**Usando NPM**
+
+```bash
+npm i -g @e2b/cli
+
+```
+
+### 2. Login to E2B CLI
+
+Antes de que puedas crear un sandbox personalizado, necesitas iniciar sesión en la CLI de E2B.
+
+```bash
+e2b auth login
+
+```
+
+### 3. Initialize a sandbox template
+
+```bash
+e2b template init
+
+```
+
+### 4. Specify the packages you need in `e2b.Dockerfile`
+
+Edita el `e2b.Dockerfile` para instalar los paquetes que necesites.
+
+> ℹ️ Necesitas usar la imagen base e2bdev/code-interpreter:latest.
+> 
+
+**e2b.Dockerfile**
+
+```
+FROM e2bdev/code-interpreter:latest
+
+RUN pip install cowsay
+RUN npm install cowsay
+
+```
+
+### 5. Build the sandbox template
+
+Ejecuta el siguiente comando para construir la plantilla del sandbox.
+
+```bash
+e2b template build -c "/root/.jupyter/start-up.sh"
+
+```
+
+Esto tomará un tiempo, ya que convierte la imagen de Docker en un sandbox que es una pequeña VM. Al final del proceso, verás el ID del sandbox de esta manera:
+
+```
+Running postprocessing. It can take up to few minutes.
+
+Postprocessing finished.
+✅ Building sandbox template YOUR_TEMPLATE_ID finished.
+
+```
+
+### 6. Start your custom sandbox
+
+Ahora puedes pasar el ID de la plantilla al SDK para iniciar tu sandbox personalizado.
+
+**JavaScript & TypeScript**
+
+```jsx
+import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = Sandbox.create({
+  template: 'YOUR_TEMPLATE_ID',
+})
+
+```
+
+---
+
+## Install packages during the sandbox runtime
+
+Usa esta opción si no sabes de antemano qué paquetes necesitarás en el sandbox. Puedes instalar paquetes con el gestor de paquetes de tu elección.
+
+> ℹ️ Los paquetes instalados durante el tiempo de ejecución solo están disponibles en la instancia del sandbox en ejecución. Cuando inicies una nueva instancia de sandbox, los paquetes no estarán disponibles.
+> 
+
+### 1. Install Python packages with PIP
+
+**JavaScript & TypeScript**
+
+```jsx
+import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = Sandbox.create()
+sbx.commands.run('pip install cowsay') // Esto instalará el paquete cowsay
+sbx.runCode(`
+import cowsay
+cowsay.cow('Hello, world!')
+`)
+
+```
+
+### 2. Install Node.js packages with NPM
+
+**JavaScript & TypeScript**
+
+```jsx
+import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = Sandbox.create()
+sbx.commands.run('npm install cowsay') // Esto instalará el paquete cowsay
+sbx.runCode(`
+const cowsay = require('cowsay')
+console.log(cowsay.say({ text: 'Hello, world!' }))
+`, { language: 'javascript' })
+
+```
+
+### 3. Install packages with package manager of your choice
+
+Dado que los Sandboxes de E2B son máquinas basadas en Debian, puedes usar cualquier gestor de paquetes soportado por Debian. Solo necesitas asegurarte de que el gestor de paquetes ya esté instalado en el sandbox.
+
+Por ejemplo, para instalar `curl` y `git`, puedes usar los siguientes comandos:
+
+**JavaScript & TypeScript**
+
+```jsx
+import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = Sandbox.create()
+await sbx.commands.run('apt-get update && apt-get install -y curl git')
+
+```
+
+# API Key
+
+Para usar la clave API, puedes:
+
+- Establecer la clave API como la variable de entorno E2B_API_KEY para evitar pasarla cada vez que creas un sandbox.
+- O pasarla directamente al constructor de Sandbox como se muestra a continuación:
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create({ apiKey: 'YOUR_API_KEY' })`
+
+### Where to find API key
+
+Puedes obtener tu clave API en el [dashboard](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdashboard).
+
+---
+
+## Access Token
+
+El token de acceso se usa solo en la CLI y **no es necesario en el SDK**. No hay necesidad de configurarlo al iniciar sesión en la CLI usando e2b auth login.
+
+> ℹ️ Para autenticarse sin el navegador, puedes establecer E2B_ACCESS_TOKEN como una variable de entorno. Esto es útil para pipelines de CI/CD.
+> 
+
+### Where to find Access token
+
+Puedes obtener tu token de acceso en el [dashboard](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdashboard).
+
+# Analyze data with AI
+
+Puedes usar E2B Sandbox para ejecutar código generado por IA para analizar datos. Así es como suele ser el flujo de trabajo de análisis de datos con IA:
+
+1. Tu usuario tiene un conjunto de datos en formato CSV u otros formatos.
+2. Le pides al LLM que genere código (generalmente Python) basado en los datos del usuario.
+3. El sandbox ejecuta el código generado por la IA y devuelve los resultados.
+4. Muestras los resultados al usuario.
+
+---
+
+## Example: Analyze CSV file with E2B and Claude 3.5 Sonnet
+
+Este breve ejemplo te mostrará cómo usar E2B Sandbox para ejecutar código generado por IA para analizar datos CSV.
+
+### Table of Contents
+
+1. Install dependencies
+2. Set your API keys
+3. Download example CSV file
+4. Initialize the sandbox and upload the dataset to the sandbox
+5. Prepare the method for running AI-generated code
+6. Prepare the prompt and initialize Anthropic client
+7. Connect the sandbox to the LLM with tool calling
+8. Parse the LLM response and run the AI-generated code in the sandbox
+9. Save the generated chart
+10. Run the code
+11. Full final code
+
+### 1. Install dependencies
+
+Instala el SDK de E2B y el SDK de Claude en tu proyecto ejecutando el siguiente comando en tu terminal.
+
+**Terminal (JavaScript & TypeScript)**
+
+Generated bash
+
+      `npm i @e2b/code-interpreter @anthropic-ai/sdk dotenv`
+
+### 2. Set your API keys
+
+1. Obtén tu clave API de E2B desde el [Dashboard de E2B](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdashboard).
+2. Obtén tu clave API de Claude desde el [Dashboard de API de Claude](https://www.google.com/url?sa=E&q=https%3A%2F%2Fconsole.anthropic.com%2Fdashboard).
+3. Pega las claves en tu archivo .env.
+
+**.env**
+
+Generated code
+
+      `E2B_API_KEY=e2b_***
+ANTHROPIC_API_KEY=sk-ant-***`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487).
+
+IGNORE_WHEN_COPYING_END
+
+### 3. Download example CSV file
+
+Usaremos el [conjunto de datos de unas 10,000 películas](https://www.google.com/url?sa=E&q=https%3A%2F%2Fwww.kaggle.com%2Fdatasets%2Futkarshx27%2Fmovies-dataset) disponible públicamente.
+
+1. Haz clic en el botón "Download" en la parte superior de la página.
+2. Selecciona "Download as zip (2 MB)".
+3. Descomprime el archivo y deberías ver el archivo dataset.csv. Muévelo a la raíz de tu proyecto.
+
+### 4. Initialize the sandbox and upload the dataset to the sandbox
+
+Subiremos el conjunto de datos del tercer paso al sandbox y lo guardaremos como dataset.csv.
+
+**index.ts (JavaScript & TypeScript)**
+
+Generated javascript
+
+      `import 'dotenv/config'
+import fs from 'fs'
+import { Sandbox } from '@e2b/code-interpreter'
+
+// Create sandbox
+const sbx = await Sandbox.create()
+
+// Upload the dataset to the sandbox
+const content = fs.readFileSync('dataset.csv')
+const datasetPathInSandbox = await sbx.files.write('dataset.csv', content)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### 5. Prepare the method for running AI-generated code
+
+Agrega el siguiente código al archivo. Aquí estamos agregando el método para la ejecución del código.
+
+**index.ts (JavaScript & TypeScript)**
+
+Generated javascript
+
+      `// ... código del paso anterior
+
+async function runAIGeneratedCode(aiGeneratedCode: string) {
+  console.log('Running the code in the sandbox...')
+  const execution = await sbx.runCode(aiGeneratedCode)
+  console.log('Code execution finished!')
+  console.log(execution)
+}`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### 6. Prepare the prompt and initialize Anthropic client
+
+El prompt que usaremos describe el conjunto de datos y el análisis que queremos realizar, así:
+
+1. Describe las columnas en el conjunto de datos CSV.
+2. Pregúntale al LLM qué queremos analizar - aquí queremos analizar el promedio de votos a lo largo del tiempo. Estamos pidiendo un gráfico como salida.
+3. Instruye al LLM para que genere código Python para el análisis de datos.
+
+**index.ts (JavaScript & TypeScript)**
+
+Generated javascript
+
+      `// ... código del paso anterior
+import Anthropic from '@anthropic-ai/sdk'
+
+const prompt = `
+I have a CSV file about movies. It has about 10k rows. It's saved in the sandbox at ${datasetPathInSandbox}.path
+These are the columns:
+
+- 'id': number, id of the movie
+- 'original_language': string like "eng", "es", "ko", etc
+- 'original_title': string that's name of the movie in the original language
+- 'overview': string about the movie
+- 'popularity': float, from 0 to 9137.939. It's not normalized at all and there are outliers
+- 'release_date': date in the format yyyy-mm-dd
+- 'title': string that's the name of the movie in english
+- 'vote_average': float number between 0 and 10 that's representing viewers voting average
+- 'vote_count': int for how many viewers voted
+
+I want to better understand how the vote average has changed over the years. Write Python code that analyzes the
+`
+
+const anthropic = new Anthropic()
+console.log('Waiting for the model response...')
+const msg = await anthropic.messages.create({
+  model: 'claude-3-5-sonnet-20240620',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: prompt }],
+})`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### 7. Connect the sandbox to the LLM with tool calling
+
+Usaremos la capacidad de Claude para usar [herramientas (function calling)](https://www.google.com/url?sa=E&q=https%3A%2F%2Fdocs.anthropic.com%2Fen%2Fdocs%2Ftool-use) para ejecutar el código en el sandbox.
+
+La forma en que lo haremos es conectando el método para ejecutar código generado por IA que creamos en el paso anterior al modelo de Claude.
+
+Actualiza la inicialización del cliente Anthropic para incluir el uso de la herramienta así:
+
+**index.ts (JavaScript & TypeScript)**
+
+Generated javascript
+
+      `// ...
+
+const msg = await anthropic.messages.create({
+  model: 'claude-3-5-sonnet-20240620',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: prompt }],
+  tools: [
+    {
+      name: 'run_python_code',
+      description: 'Run Python code',
+      input_schema: {
+        type: 'object',
+        properties: {
+          code: {
+            type: 'string',
+            description: 'The Python code to run',
+          },
+        },
+        required: ['code'],
+      },
+    },
+  ],
+})`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### 8. Parse the LLM response and run the AI-generated code in the sandbox
+
+Ahora analizaremos el objeto msg para obtener el código de la respuesta del LLM basado en la herramienta que creamos en el paso anterior. Una vez que tengamos el código, lo pasaremos al método runAIGeneratedCode que creamos en el paso anterior para ejecutar el código en el sandbox.
+
+**index.ts (JavaScript & TypeScript)**
+
+Generated javascript
+
+      `// ... código de los pasos anteriores
+
+interface CodeRunToolInput {
+  code: string
+}
+
+for (const contentBlock of msg.content) {
+  if (contentBlock.type === 'tool_use') {
+    if (contentBlock.name === 'run_python_code') {
+      const code = (contentBlock.input as CodeRunToolInput).code
+      console.log(`Will run following code in the sandbox`, code)
+      // Execute the code in the sandbox
+      await runAIGeneratedCode(code)
+    }
+  }
+}`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### 9. Save the generated chart
+
+Al ejecutar código en el sandbox para análisis de datos, puedes obtener diferentes tipos de resultados. Incluyendo stdout, stderr, gráficos, tablas, errores de texto y más.
+
+En este ejemplo, estamos pidiendo específicamente un gráfico, por lo que buscaremos el gráfico en los resultados.
+
+Vamos a actualizar el método runAIGeneratedCode para verificar el gráfico en los resultados y guardarlo en el archivo.
+
+**index.ts (JavaScript & TypeScript)**
+
+Generated javascript
+
+      `async function runAIGeneratedCode(aiGeneratedCode: string) {
+  console.log('Running the code in the sandbox...')
+  const execution = await sbx.runCode(aiGeneratedCode)
+  console.log('Code execution finished!')
+
+  // First let's check if the code ran successfully.
+  if (execution.error) {
+    console.error('AI-generated code had an error.')
+    console.log(execution.error.name)
+    console.log(execution.error.value)
+    console.log(execution.error.traceback)
+    process.exit(1)
+  }
+
+  // Iterate over all the results and specifically check for png files that will represent the chart.
+  let resultIdx = 0
+  for (const result of execution.results) {
+    if (result.png) {
+      // Save the png to a file
+      // The png is in base64 format.
+      fs.writeFileSync(`chart-${resultIdx}.png`, result.png, { encoding: 'base64' })
+      console.log(`Chart saved to chart-${resultIdx}.png`)
+      resultIdx++
+    }
+  }
+}`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### 10. Run the code
+
+Ahora puedes ejecutar todo el código para ver los resultados.
+
+**Terminal**
+
+Generated bash
+
+      `npx tsx index.ts`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+Deberías ver el gráfico en la raíz de tu proyecto, que se verá así:
+
+```
+![alt text](https://e2b.dev/docs/code-interpreting/analyze-data/chart.png)
+```
+
+### 11. Full final code
+
+(Se omitió la sección del código final completo ya que todos los fragmentos se han proporcionado en los pasos anteriores y son suficientes para reconstruirlo).
+
+# Create charts & visualizations
+
+E2B Sandbox te permite crear gráficos y visualizaciones ejecutando código Python dentro del sandbox con el método runCode() en JavaScript y el método run_code() en Python.
+
+Estos gráficos y visualizaciones pueden ser [estáticos](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Fcode-interpreting%2Fcharts%2Fstatic-charts) o [interactivos](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Fcode-interpreting%2Fcharts%2Finteractive-charts).
+
+# Static charts
+
+Cada vez que ejecutas código Python con el método runCode() en JavaScript o run_code() en Python, el código se ejecuta en un servidor Jupyter sin interfaz gráfica (*headless*) dentro del sandbox.
+
+E2B detecta automáticamente cualquier gráfico creado con Matplotlib y lo envía de vuelta al cliente como imágenes codificadas en formato base64. Estas imágenes son directamente accesibles a través de los ítems de result en el array execution.results.
+
+Aquí se muestra cómo recuperar un gráfico estático del código Python ejecutado que contiene un gráfico de Matplotlib.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+import fs from 'fs'
+
+const codeToRun = `
+import matplotlib.pyplot as plt
+
+plt.plot([1, 2, 3, 4])
+plt.ylabel('some numbers')
+plt.show()
+`
+const sandbox = await Sandbox.create()
+
+// Run the code inside the sandbox
+const execution = await sandbox.runCode(codeToRun)
+
+// There's only one result in this case - the plot displayed with 'plt.show()'
+const firstResult = execution.results[0]
+
+if (firstResult.png) {
+  // Save the png to a file. The png is in base64 format.
+  fs.writeFileSync('chart.png', firstResult.png, { encoding: 'base64' })
+  console.log('Chart saved as chart.png')
+}`
+
+El código en la variable codeToRun / code_to_run producirá el siguiente gráfico que estamos guardando como el archivo chart.png.
+
+```
+![alt text](https://e2b.dev/docs/code-interpreting/charts/static-charts-example.png)
+```
+
+# Interactive charts
+
+E2B también te permite crear gráficos interactivos con estilos personalizados.
+
+E2B detecta automáticamente los gráficos al ejecutar código Python con el método runCode() en JavaScript o run_code() en Python. El código Python debe incluir gráficos de Matplotlib.
+
+Cuando se detecta un gráfico, E2B envía los datos del gráfico de vuelta al cliente. Puedes acceder al gráfico en el array execution.results, donde cada elemento es un objeto Result con la propiedad chart.
+
+> ℹ️ Prueba AI Data Analyst - una aplicación Next.js que usa E2B para crear gráficos interactivos.
+> 
+
+Aquí tienes un ejemplo simple de un gráfico de barras:
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox, BarChart } from '@e2b/code-interpreter'
+
+const code = `
+import matplotlib.pyplot as plt
+
+# Prepare data
+authors = ['Author A', 'Author B', 'Author C', 'Author D']
+sales = [100, 200, 300, 400]
+
+# Create and customize the bar chart
+plt.figure(figsize=(10, 6))
+plt.bar(authors, sales, label='Books Sold', color='blue')
+plt.xlabel('Authors')
+plt.ylabel('Number of Books Sold')
+plt.title('Book Sales by Authors')
+
+# Display the chart
+plt.tight_layout()
+plt.show()
+`
+
+const sandbox = await Sandbox.create()
+const result = await sandbox.runCode(code)
+const chart = result.results[0].chart as BarChart
+
+console.log('Type:', chart.type)
+console.log('Title:', chart.title)
+console.log('X Label:', chart.x_label)
+console.log('Y Label:', chart.y_label)
+console.log('X Unit:', chart.x_unit)
+console.log('Y Unit:', chart.y_unit)
+console.log('Elements:', chart.elements)`
+
+El código anterior producirá la siguiente salida:
+
+**Terminal**
+
+Generated code
+
+      `Type: bar
+Title: Book Sales by Authors
+X Label: Authors
+Y Label: Number of Books Sold
+X Unit: null
+Y Unit: null
+Elements: [
+  {
+    label: "Author A",
+    group: "Books Sold",
+    value: 100,
+  },
+  {
+    label: "Author B",
+    group: "Books Sold",
+    value: 200,
+  },
+  {
+    label: "Author C",
+    group: "Books Sold",
+    value: 300,
+  },
+  {
+    label: "Author D",
+    group: "Books Sold",
+    value: 400,
+  }
+]`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487).
+
+IGNORE_WHEN_COPYING_END
+
+Puedes enviar estos datos a tu frontend para crear un gráfico interactivo con tu librería de gráficos favorita.
+
+## Supported interactive charts
+
+Los siguientes gráficos son soportados actualmente:
+
+- Gráfico de líneas
+- Gráfico de barras
+- Gráfico de dispersión
+- Gráfico circular
+- Diagrama de caja y bigotes
+
+# Streaming
+
+El SDK de E2B te permite transmitir la salida y los resultados al ejecutar código en el sandbox.
+
+## Stream stdout y stderr
+
+Al usar el método runCode() en JavaScript o run_code() en Python, puedes pasar los callbacks onStdout / on_stdout y onStderr / on_stderr para manejar la salida.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const codeToRun = `
+import time
+import sys
+print("This goes first to stdout")
+time.sleep(3)
+print("This goes later to stderr", file=sys.stderr)
+time.sleep(3)
+print("This goes last")
+`
+const sandbox = await Sandbox.create()
+sandbox.runCode(codeToRun, {
+  // Usa `onError` para manejar errores de código en tiempo de ejecución
+  onError: error => console.error('error:', error),
+  onStdout: data => console.log('stdout:', data),
+  onStderr: data => console.error('stderr:', data),
+})`
+
+El código anterior imprimirá lo siguiente:
+
+Generated code
+
+      `stdout: This goes first to stdout
+
+stderr: This goes later to stderr
+
+stdout: This goes last`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487).
+
+IGNORE_WHEN_COPYING_END
+
+---
+
+## Stream results
+
+Al usar el método runCode() en JavaScript o run_code() en Python, puedes pasar un callback onResults / on_results para recibir resultados del sandbox como gráficos, tablas, texto y más.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `const codeToRun = `
+import matplotlib.pyplot as plt
+
+# Preparar datos
+categories = ['Category A', 'Category B', 'Category C', 'Category D']
+values = [10, 20, 15, 25]
+
+# Crear y personalizar el gráfico de barras
+plt.figure(figsize=(10, 6))
+plt.bar(categories, values, color='green')
+plt.xlabel('Categories')
+plt.ylabel('Values')
+plt.title('Values by Category')
+
+# Mostrar el gráfico
+plt.show()
+`
+const sandbox = await Sandbox.create()
+await sandbox.runCode(codeToRun, {
+  onResult: result => console.log('result:', result),
+})`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+# Sandbox lifecycle
+
+Cuando inicias el sandbox, permanece activo durante 5 minutos por defecto, pero puedes cambiarlo pasando el parámetro timeout. Después de que pase el tiempo, el sandbox se apagará automáticamente.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Crear sandbox y mantenerlo en ejecución durante 60 segundos.
+// 🏃‍♀️ Nota: Las unidades son milisegundos.
+const sandbox = await Sandbox.create({
+  timeoutMs: 60_000,
+})`
+
+## Change sandbox timeout during runtime
+
+Puedes cambiar el tiempo de espera del sandbox mientras se está ejecutando llamando al método setTimeout en JavaScript o set_timeout en Python.
+
+Cuando llamas al método de establecer tiempo de espera, el tiempo de espera del sandbox se restablecerá al nuevo valor que especificaste.
+
+Esto puede ser útil si quieres extender la vida útil del sandbox cuando ya está en ejecución. Por ejemplo, puedes iniciar un sandbox con un tiempo de espera de 1 minuto y luego llamar periódicamente a setTimeout cada vez que el usuario interactúa con tu aplicación.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Crear sandbox y mantenerlo en ejecución durante 60 segundos.
+const sandbox = await Sandbox.create({ timeoutMs: 60_000 })
+
+// Cambiar el tiempo de espera del sandbox a 30 segundos.
+// 🏃‍♀️ El nuevo tiempo de espera será de 30 segundos a partir de ahora.
+await sandbox.setTimeout(30_000)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Retrieve sandbox information
+
+Puedes recuperar información del sandbox como el ID, la plantilla, los metadatos y la fecha de inicio/fin llamando al método getInfo en JavaScript o get_info en Python.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Crear sandbox y mantenerlo en ejecución durante 60 segundos.
+const sandbox = await Sandbox.create({ timeoutMs: 60_000 })
+
+// Recuperar información del sandbox
+const info = await sandbox.getInfo()
+
+console.log(info)
+/* {
+  "sandboxId": "i1ny0783cype8gmoawizmx-ce30bc46",
+  "templateId": "rki5dems9wqfm4r03t7g",
+  "name": "base",
+  "metadata": {},
+  "startedAt": "2025-03-24T15:37:58.076Z",
+  "endAt": "2025-03-24T15:42:58.076Z"
+} */`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Shutdown sandbox
+
+Puedes apagar el sandbox en cualquier momento, incluso antes de que se agote el tiempo de espera, llamando al método kill.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Crear sandbox y mantenerlo en ejecución durante 60 segundos.
+const sandbox = await Sandbox.create({ timeoutMs: 60_000 })
+
+// Apagar el sandbox inmediatamente.
+await sandbox.kill()`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+# Sandbox persistence
+
+> ℹ️ La persistencia del sandbox está actualmente en beta pública.
+> 
+> 1. Necesitarás instalar la [versión beta de los SDKs](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Fsandbox%2Fpersistence%23limitations-while-in-beta).
+> 2. Considera [algunas limitaciones](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Fsandbox%2Fpersistence%23limitations-while-in-beta).
+> 3. La persistencia es gratuita para todos los usuarios durante la beta.
+
+La persistencia del sandbox te permite pausar tu sandbox y reanudarlo más tarde desde el mismo estado en que lo pausaste.
+
+Esto incluye no solo el estado del sistema de archivos del sandbox, sino también la memoria del sandbox. Esto significa que todos los procesos en ejecución, variables cargadas, datos, etc., se guardarán.
+
+## Pausing sandbox
+
+Cuando pausas un sandbox, se guardará tanto el sistema de archivos como el estado de la memoria del sandbox. Esto incluye todos los archivos en el sistema de archivos del sandbox y todos los procesos en ejecución, variables cargadas, datos, etc.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = await Sandbox.create()
+console.log('Sandbox created', sbx.sandboxId)
+
+// Pausar el sandbox
+// Puedes guardar el ID del sandbox en tu base de datos
+// para reanudar el sandbox más tarde
+const sandboxId = await sbx.pause()
+console.log('Sandbox paused', sandboxId)`
+
+## Resuming sandbox
+
+Cuando reanudas un sandbox, estará en el mismo estado en que estaba cuando lo pausaste. Esto significa que todos los archivos en el sistema de archivos del sandbox serán restaurados y todos los procesos en ejecución, variables cargadas, datos, etc., serán restaurados.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = await Sandbox.create()
+console.log('Sandbox created', sbx.sandboxId)
+
+// Pausar el sandbox
+// Puedes guardar el ID del sandbox en tu base de datos
+// para reanudar el sandbox más tarde
+const sandboxId = await sbx.pause()
+console.log('Sandbox paused', sandboxId)
+
+// Reanudar el sandbox desde el mismo estado
+const sameSbx = await Sandbox.resume(sandboxId)
+console.log('Sandbox resumed', sameSbx.sandboxId)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Listing paused sandboxes
+
+Puedes listar todos los sandboxes pausados llamando al método Sandbox.list y proporcionando el parámetro de consulta state. Más información sobre el uso del método se puede encontrar en [Listar Sandboxes](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Fsandbox%2Flist-sandboxes).
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox, SandboxInfo } from '@e2b/code-interpreter'
+
+// Listar todos los sandboxes pausados
+const paginator = Sandbox.list({ query: { state: ['paused'] } })
+
+// Obtener la primera página de sandboxes pausados
+const sandboxes = await paginator.nextItems()
+
+// Obtener todos los sandboxes pausados
+const sandboxInfo: SandboxInfo[] = []
+while (paginator.hasNext) {
+  const items = await paginator.nextItems()
+  sandboxes.push(...items)
+}`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Removing paused sandboxes
+
+Puedes eliminar sandboxes pausados llamando al método kill en la instancia del Sandbox.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = await Sandbox.create()
+console.log('Sandbox created', sbx.sandboxId)
+
+// Pausar el sandbox
+// Puedes guardar el ID del sandbox en tu base de datos
+// para reanudar el sandbox más tarde
+const sandboxId = await sbx.pause()
+
+// Eliminar sandbox
+await sbx.kill()
+
+// Eliminar sandbox por id
+await Sandbox.kill(sandboxId)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Sandbox's timeout
+
+Cuando reanudas un sandbox, el tiempo de espera del sandbox se restablece al tiempo de espera predeterminado de un sandbox de E2B: 5 minutos.
+
+Puedes pasar un tiempo de espera personalizado al método Sandbox.resume() de esta manera:
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `const sbx = await Sandbox.resume(sandboxId, { timeoutMs: 60 * 1000 }) // 60 segundos`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Network
+
+Si tienes un servicio (por ejemplo, un servidor) ejecutándose dentro de tu sandbox y pausas el sandbox, el servicio no será accesible desde el exterior y todos los clientes serán desconectados. Si reanudas el sandbox, el servicio será accesible de nuevo, pero necesitarás que los clientes se conecten nuevamente.
+
+## Limitations while in beta
+
+- Tarda unos 4 segundos por 1 GB de RAM en pausar el sandbox.
+- Tarda aproximadamente 1 segundo en reanudar el sandbox.
+- El sandbox puede estar en pausa hasta 30 días.
+    - Después de 30 días, los datos se eliminarán y no podrás reanudar el sandbox. Intentar reanudar un sandbox que fue eliminado o no existe resultará en el error NotFoundError en el SDK de JavaScript y la excepción NotFoundException en el SDK de Python.
+
+# Sandbox metrics
+
+> ℹ️ Esta característica está en una beta privada.
+> 
+
+Las métricas del sandbox te permiten obtener información sobre el uso de CPU y memoria del sandbox.
+
+## Installation
+
+Para obtener las métricas del sandbox, necesitas instalar la versión beta de los SDKs y la CLI:
+
+- Instalando los SDKs beta
+- Instalando la CLI beta
+
+## Getting sandbox metrics
+
+Obtener las métricas de un sandbox devuelve un array de métricas con marca de tiempo que contienen información sobre el uso de CPU y memoria. Las métricas se recopilan al inicio del sandbox, luego cada 2 segundos, y finalmente justo antes de que el sandbox se elimine.
+
+### Getting sandbox metrics using the SDKs
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sbx = await Sandbox.create()
+console.log('Sandbox created', sbx.sandboxId)
+
+const metrics = await sbx.getMetrics()
+
+// También puedes obtener las métricas por el ID del sandbox:
+// const metrics = await Sandbox.getMetrics(sbx.sandboxId)
+
+console.log('Sandbox metrics:', metrics)
+/*
+[
+  {
+    cpuCount: 2,
+    cpuUsedPct: 50.05,
+    memTotalMiB: 484,
+    memUsedMiB: 37,
+    timestamp: '2025-01-23T23:44:12.222Z'
+  },
+  {
+    cpuCount: 2,
+    cpuUsedPct: 4.5,
+    memTotalMiB: 484,
+    memUsedMiB: 37,
+    timestamp: '2025-01-23T23:44:13.220Z'
+  }
+]
+*/`
+
+### Getting sandbox metrics using the CLI
+
+**Terminal**
+
+Generated bash
+
+      `e2b sandbox metrics <sandbox_id>`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+Generated code
+
+      `# Metrics for sandbox <sandbox_id>
+#
+# [2025-01-23 09:58:58.829Z] { cpuCount: 2, cpuUsedPct: 50.21, logger: '', memTotalMiB: 484, memUsedMiB: 38, timestamp: ... }
+# [2025-01-23 09:59:00.814Z] { cpuCount: 2, cpuUsedPct: 5.16, logger: '', memTotalMiB: 484, memUsedMiB: 37, timestamp: ... }
+# [2025-01-23 09:59:08.815Z] { cpuCount: 2, cpuUsedPct: 1.6, logger: '', memTotalMiB: 484, memUsedMiB: 37, timestamp: ... }`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487).
+
+IGNORE_WHEN_COPYING_END
+
+## Limitations while in beta
+
+- Puede tardar un segundo o más en obtener las métricas después de crear el sandbox. Hasta que los registros se recopilen desde el sandbox, obtendrás un array vacío.
+
+# Environment variables
+
+Esta página cubre cómo establecer y usar variables de entorno en un sandbox, y las variables de entorno predeterminadas dentro del sandbox.
+
+## Default environment variables
+
+### Knowing if you are inside a sandbox
+
+A veces es útil saber si el código se está ejecutando dentro de un sandbox. Al crear un sandbox, se establecen como variables de entorno para los comandos, metadatos útiles del sandbox:
+
+- E2B_SANDBOX se establece a true para que los procesos sepan si están dentro de nuestra VM.
+- E2B_SANDBOX_ID para conocer el ID del sandbox.
+- E2B_TEAM_ID para conocer el ID del equipo que creó el sandbox.
+- E2B_TEMPLATE_ID para saber qué plantilla se usó para el sandbox actual.
+
+Puedes probarlo ejecutando el siguiente código en el sandbox:
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `const sandbox = await Sandbox.create()
+const result = await sandbox.commands.run('echo $E2B_SANDBOX_ID')`
+
+> ℹ️ Estas variables de entorno predeterminadas solo son accesibles a través del SDK; al usar la CLI, puedes encontrarlas en forma de archivos dot en el directorio /run/e2b/:
+> 
+> 
+>       `user@e2b:~$ ls -a /run/e2b/
+> .E2B_SANDBOX  .E2B_SANDBOX_ID  .E2B_TEAM_ID  .E2B_TEMPLATE_ID`
+> 
+> IGNORE_WHEN_COPYING_START
+> 
+> content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+> 
+> IGNORE_WHEN_COPYING_END
+> 
+
+## Setting environment variables
+
+Hay 3 formas de establecer variables de entorno en un sandbox:
+
+1. [Variables de entorno globales al crear el sandbox](https://www.google.com/url?sa=E&q=%231-global-environment-variables).
+2. [Al ejecutar código en el sandbox](https://www.google.com/url?sa=E&q=%232-setting-environment-variables-when-running-code).
+3. [Al ejecutar comandos en el sandbox](https://www.google.com/url?sa=E&q=%233-setting-environment-variables-when-running-commands).
+
+### 1. Global environment variables
+
+Puedes establecer variables de entorno globales al crear un sandbox.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create({
+  envs: {
+    MY_VAR: 'my_value',
+  },
+})`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### 2. Setting environment variables when running code
+
+Puedes establecer variables de entorno para una llamada de ejecución de código específica en el sandbox. Esto se recomienda para pasar secretos.
+
+- Estas variables de entorno están limitadas de forma segura al comando y no serán globales ni accesibles dentro del sandbox o para comandos posteriores.
+- Si tenías una variable de entorno global con el mismo nombre, será sobrescrita solo para este comando.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `const sandbox = await Sandbox.create()
+const result = await sandbox.runCode('import os; print(os.environ.get("MY_VAR"))', {
+  envs: {
+    MY_VAR: 'my_value',
+  },
+})`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### 3. Setting environment variables when running commands
+
+Puedes establecer variables de entorno para una ejecución de comando específica en el sandbox. Esto se recomienda para pasar secretos.
+
+- Estas variables de entorno están limitadas de forma segura al comando y no serán globales ni accesibles dentro del sandbox o para comandos posteriores.
+- Si tenías una variable de entorno global con el mismo nombre, será sobrescrita solo para este comando.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `const sandbox = await Sandbox.create()
+sandbox.commands.run('echo $MY_VAR', {
+  envs: {
+    MY_VAR: '123',
+  },
+})`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+# List sandboxes
+
+Puedes listar sandboxes usando el método Sandbox.list().
+
+> ℹ️ Una vez que tienes información sobre un sandbox en ejecución, puedes conectarte a él usando el método Sandbox.connect().
+> 
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Crear un sandbox.
+const sandbox = await Sandbox.create({
+  metadata: {
+    name: 'My Sandbox',
+  },
+})
+
+// Listar todos los sandboxes en ejecución.
+const runningSandboxes = await Sandbox.list()
+const runningSandbox = runningSandboxes[0]
+
+console.log('Running sandbox metadata:', runningSandbox.metadata)
+console.log('Running sandbox id:', runningSandbox.sandboxId)
+console.log('Running sandbox started at:', runningSandbox.startedAt)
+console.log('Running sandbox template id:', runningSandbox.templateId)`
+
+El código anterior mostrará algo como esto:
+
+Generated code
+
+      `Running sandbox metadata: {
+  name: "My Sandbox"
+}
+Running sandbox id: lxfj3iankaishgcge4jwn-b0b684e9
+Running sandbox started at: 2024-10-15T21:13:07.311Z
+Running sandbox template id: 3e4rngfa34txe0gxcizf`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487).
+
+IGNORE_WHEN_COPYING_END
+
+## Filtering sandboxes
+
+Puedes filtrar sandboxes especificando pares de clave-valor de [Metadatos](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Fsandbox%2Fmetadata). Especificar múltiples pares de clave-valor devolverá sandboxes que coincidan con todos ellos.
+
+Esto puede ser útil cuando tienes un gran número de sandboxes y quieres encontrar solo unos específicos. El filtrado se realiza en el servidor.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Crear sandbox con metadatos.
+const sandbox = await Sandbox.create({
+  metadata: {
+    env: 'dev',
+    app: 'my-app',
+    userId: '123',
+  },
+})
+
+// Listar los sandboxes en ejecución que tienen la clave 'userId' con valor '123' y la clave 'env' con valor 'dev'.
+const runningSandboxes = await Sandbox.list({
+  query: {
+    metadata: { userId: '123', env: 'dev' },
+  },
+})`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+---
+
+## Changes in the Beta SDKs
+
+> ℹ️ Si estás usando la versión beta del SDK, el método Sandbox.list() fue actualizado.
+> 
+
+### Listing sandboxes
+
+El método Sandbox.list() ahora soporta paginación. En la sección de [paginación avanzada](https://www.google.com/url?sa=E&q=%23advanced-pagination) puedes encontrar más información sobre técnicas de paginación usando el método actualizado.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox, SandboxInfo } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+
+const paginator = Sandbox.list()
+
+// Obtener la primera página de sandboxes (en ejecución y pausados)
+const firstPage = await paginator.nextItems()
+
+// Obtener la siguiente página de sandboxes
+const nextPage = await paginator.nextItems()`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### Filtering sandboxes
+
+Filtra los sandboxes por su estado actual. El parámetro state puede contener running para sandboxes en ejecución o paused para sandboxes pausados, o ambos.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Crear un sandbox.
+const sandbox = await Sandbox.create()
+
+// Listar todos los sandboxes que están en ejecución o pausados.
+const paginator = Sandbox.list({
+  query: {
+    state: ['running', 'paused'],
+  },
+})
+
+const sandboxes = await paginator.nextItems()`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+Filtra los sandboxes por los pares de clave-valor de metadatos especificados durante la creación del Sandbox.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Crear sandbox con metadatos.
+const sandbox = await Sandbox.create({
+  metadata: {
+    env: 'dev',
+    app: 'my-app',
+    userId: '123',
+  },
+})
+
+// Listar sandboxes que tienen la clave 'userId' con valor '123' y la clave 'env' con valor 'dev'.
+const paginator = Sandbox.list({
+  query: {
+    metadata: { userId: '123', env: 'dev' },
+  },
+})
+
+const sandboxes = await paginator.nextItems()`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+### Advanced pagination
+
+Para una paginación más granular, puedes establecer un límite de elementos por página personalizado (el predeterminado y máximo es **1000**) y especificar un parámetro de desplazamiento (nextToken o next_token) para empezar a paginar desde ahí.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const paginator = Sandbox.list({
+  limit: 1000,
+  nextToken: '<base64-encoded-token>',
+})
+
+// Propiedades adicionales del paginador
+// `paginator.hasNext` // booleano que indica si hay una página siguiente
+
+// Token de la página siguiente
+// `paginator.nextToken`
+
+// Obtener la página siguiente
+await paginator.nextItems()`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+Puedes obtener todas las páginas recorriendo el paginador mientras se comprueba si hay una página siguiente (usando la propiedad hasNext o has_next) y obteniendo hasta que no queden más páginas por obtener.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox, SandboxInfo } from '@e2b/code-interpreter'
+
+const paginator = Sandbox.list()
+
+// Recorrer todas las páginas
+const sandboxes: SandboxInfo[] = []
+while (paginator.hasNext) {
+  const items = await paginator.nextItems()
+  sandboxes.push(...items)
+}`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+# Connect to running sandbox
+
+Si tienes un sandbox en ejecución, puedes conectarte a él usando el método Sandbox.connect() y luego comenzar a controlarlo con nuestro SDK.
+
+Esto es útil si quieres, por ejemplo, reutilizar la misma instancia de sandbox para el mismo usuario después de un corto período de inactividad.
+
+## 1. Get the sandbox ID
+
+Para conectarte a un sandbox en ejecución, primero necesitas obtener su ID. Puedes hacer esto llamando al método Sandbox.list().
+
+> ℹ️ Si estás usando la versión beta de los SDKs, el método Sandbox.list() fue actualizado. Consulta Listar Sandboxes para más información.
+> 
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Obtener todos los sandboxes en ejecución
+const runningSandboxes = await Sandbox.list()
+
+if (runningSandboxes.length === 0) {
+  throw new Error("No running sandboxes found")
+}
+
+// Obtener el ID del sandbox al que quieres conectarte
+const sandboxId = runningSandboxes[0].sandboxId`
+
+## 2. Connect to the sandbox
+
+Ahora que tienes el ID del sandbox, puedes conectarte al sandbox usando el método Sandbox.connect().
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// Obtener todos los sandboxes en ejecución
+const runningSandboxes = await Sandbox.list()
+
+if (runningSandboxes.length === 0) {
+  throw new Error("No running sandboxes found")
+}
+
+// Obtener el ID del sandbox al que quieres conectarte
+const sandboxId = runningSandboxes[0].sandboxId
+
+// Conectarse al sandbox
+const sandbox = await Sandbox.connect(sandboxId)
+
+// Ahora puedes usar el sandbox como de costumbre
+// ...`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+# Internet access
+
+Cada sandbox tiene acceso a internet y puede ser alcanzado por una URL pública.
+
+## Sandbox public URL
+
+Cada sandbox tiene una URL pública que puede ser utilizada para acceder a servicios en ejecución dentro del sandbox.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+
+// Siempre necesitas pasar un número de puerto para obtener el host
+const host = sandbox.getHost(3000)
+console.log(`https://\${host}`)`
+
+El código anterior imprimirá algo como esto:
+
+Generated code
+
+      `https://3000-i62mff4ahtrdfdkyn2esc-b0b684e9.e2b.dev`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487).
+
+IGNORE_WHEN_COPYING_END
+
+La primera parte más a la izquierda del host es el número de puerto que pasamos al método.
+
+## Connecting to a server running inside the sandbox
+
+Puedes iniciar un servidor dentro del sandbox y conectarte a él usando el enfoque anterior.
+
+En este ejemplo, iniciaremos un servidor HTTP simple que escucha en el puerto 3000 y responde con el contenido del directorio donde se inicia el servidor.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+
+// Iniciar un servidor HTTP simple dentro del sandbox.
+const process = await sandbox.commands.run('python -m http.server 3000', { background: true })
+
+const host = sandbox.getHost(3000)
+const url = `https://\${host}`
+console.log('Server started at:', url)
+
+// Obtener datos del servidor dentro del sandbox.
+const response = await fetch(url)
+const data = await response.text()
+console.log('Response from server inside sandbox:', data)
+
+// Matar el proceso del servidor dentro del sandbox.
+await process.kill()`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+Esta salida se verá así:
+
+Generated html
+
+      `Server started at: https://3000-ip3nfrvajtqu5ktoxugc7-b0b684e9.e2b.dev
+Response from server inside sandbox: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Directory listing for /</title>
+</head>
+<body>
+<h1>Directory listing for /</h1>
+<hr>
+<ul>
+<li><a href=".bash_logout">.bash_logout</a></li>
+<li><a href=".bashrc">.bashrc</a></li>
+<li><a href=".profile">.profile</a></li>
+</ul>
+<hr>
+</body>
+</html>`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Html
+
+IGNORE_WHEN_COPYING_END
+
+# Sandbox templates
+
+Las plantillas de sandbox te permiten personalizar el entorno del sandbox según tus necesidades.
+
+Para crear una plantilla de sandbox, especificas el archivo e2b.Dockerfile. Luego tomamos este Dockerfile y creamos una nueva plantilla de sandbox a partir de él y te devolvemos un ID de plantilla.
+
+Luego puedes usar este ID de plantilla para crear un nuevo sandbox con el SDK basado en la plantilla que creaste.
+
+## How to create custom sandbox
+
+### Steps
+
+1. [Install E2B CLI](https://www.google.com/url?sa=E&q=%231-install-e2b-cli)
+2. [Initialize sandbox template](https://www.google.com/url?sa=E&q=%232-initialize-sandbox-template)
+3. [Customize e2b.Dockerfile](https://www.google.com/url?sa=E&q=%233-customize-e2bdockerfile)
+4. [Build your sandbox template](https://www.google.com/url?sa=E&q=%234-build-your-sandbox-template)
+5. [Start your custom sandbox](https://www.google.com/url?sa=E&q=%235-start-your-custom-sandbox)
+
+### 1. Install E2B CLI
+
+**Using Homebrew (on macOS)**
+
+Generated bash
+
+      `brew install e2b`
+
+**Using NPM**
+
+Generated bash
+
+      `npm i -g @e2b/cli`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+### 2. Initialize sandbox template
+
+El siguiente comando creará un e2b.Dockerfile básico en el directorio actual.
+
+Generated bash
+
+      `e2b template init`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+### 3. Customize e2b.Dockerfile
+
+Ahora puedes personalizar tu plantilla de sandbox editando el archivo e2b.Dockerfile.
+
+**e2b.Dockerfile**
+
+Generated dockerfile
+
+      `# Asegúrate de usar esta imagen base
+FROM e2bdev/code-interpreter:latest
+
+# Instala algunos paquetes de Python
+RUN pip install cowsay`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Dockerfile
+
+IGNORE_WHEN_COPYING_END
+
+### 4. Build your sandbox template
+
+Ahora puedes construir tu plantilla de sandbox. Usaremos Docker y la CLI de E2B. Lo que sucederá es que la CLI de E2B le dirá a Docker que construya la imagen y luego la suba a la nube de E2B. Luego convertimos la imagen de Docker a una VM micro que luego se puede lanzar como un sandbox con nuestro SDK.
+
+Generated bash
+
+      `e2b template build -c "/root/.jupyter/start-up.sh"`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+Este proceso tomará un momento. Al final, verás el ID de la plantilla que necesitarás para crear un sandbox con el SDK.
+
+### 5. Start your custom sandbox
+
+Ahora puedes usar el ID de la plantilla para crear un sandbox con el SDK.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+// ID de la plantilla del paso anterior
+const templateID = 'id-of-your-template'
+
+// Pasa el ID de la plantilla al método `Sandbox.create`
+const sandbox = await Sandbox.create(templateID)
+
+// La plantilla instaló cowsay, así que podemos usarlo
+const execution = await sandbox.runCode(`
+import cowsay
+cowsay.say('Hello from E2B!')
+`)
+
+console.log(execution.stdout)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## How it works
+
+Cada vez que construyes una plantilla de sandbox, creamos un contenedor basado en el archivo e2b.Dockerfile que creas en el proceso. Extraemos el sistema de archivos del contenedor, hacemos el aprovisionamiento y la configuración (por ejemplo, instalando las dependencias requeridas) e iniciamos un sandbox.
+
+Luego, ocurren estos pasos:
+
+1. Tomamos el sandbox en ejecución.
+2. (Solo si especificaste el [comando de inicio](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ftemplates%2Fstart-command), de lo contrario, este paso se omite) Ejecuta el comando de inicio.
+3. Espera a que esté listo (por defecto 20 segundos si se especifica el comando de inicio, de lo contrario, está listo inmediatamente). La comprobación de preparación se puede configurar usando el [comando de preparación](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ftemplates%2Fready-command).
+4. Toma una instantánea del sandbox y déjalo listo para que lo generes con el SDK.
+
+Llamamos a esta instantánea del sandbox una **plantilla de sandbox**.
+
+> ℹ️ Sandbox Snapshot
+> 
+> 
+> Las instantáneas son sandboxes en ejecución guardados. Serializamos y guardamos todo el sistema de archivos del sandbox junto con todos los procesos en ejecución de una manera que se puede cargar más tarde.
+> 
+> Esto nos permite cargar el sandbox en unos pocos cientos de milisegundos más tarde con todos los procesos ya en ejecución y el sistema de archivos exactamente como estaba.
+> 
+
+# Start Command
+
+El comando de inicio te permite especificar un comando que ya estará **en ejecución** cuando generes tu sandbox personalizado. De esta manera, puedes, por ejemplo, tener servidores ejecutándose o bases de datos sembradas que ya estén completamente listas cuando generes el sandbox usando el SDK y con cero tiempo de espera para tus usuarios durante el tiempo de ejecución.
+
+La idea detrás de la función de comando de inicio es reducir los tiempos de espera para tus usuarios y tener todo listo para ellos cuando generes tu sandbox.
+
+Puedes ver cómo funciona [aquí](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ftemplates%2Foverview%23how-it-works).
+
+## How to add start command
+
+Cuando estás construyendo una plantilla de sandbox puedes especificar el comando de inicio usando la opción -c:
+
+Generated bash
+
+      `e2b template build -c "<your-start-command>"`
+
+Cuando generes el sandbox personalizado que construiste, el comando de inicio ya estará en ejecución si no hubo ningún error cuando intentamos ejecutarlo.
+
+## Sandbox template config
+
+Puedes especificar el comando de inicio también dentro del archivo e2b.toml en el mismo directorio donde ejecutas e2b template build.
+
+**e2b.toml**
+
+Generated toml
+
+      `# Este es un archivo de configuración para la plantilla de sandbox de E2B
+template_id = "lwdqsf91e9qk21ztb4mo"
+dockerfile = "e2b.Dockerfile"
+template_name = "my-agent-sandbox"
+start_cmd = "<your-start-command>"`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Toml
+
+IGNORE_WHEN_COPYING_END
+
+## Logs
+
+Puedes recuperar los logs del comando de inicio usando el SDK durante el tiempo de ejecución.
+
+> ℹ️ Estos son los logs del comando de inicio durante la fase de construcción.
+> 
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `// Comprobar los logs del comando de inicio
+import { Sandbox } from 'e2b'
+
+// Generar tu sandbox personalizado
+const sandbox = await Sandbox.create({
+  id: 'my-agent-sandbox',
+  // Si especificas los manejadores onStderr y onStdout al generar el sandbox
+  // verás los logs del comando de inicio.
+  onStderr: output => console.log("stderr", output.line),
+  onStdout: output => console.log("stdout", output.line),
+})
+
+// Cerrar el sandbox una vez hecho
+await sandbox.close()`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+O puedes usar la CLI:
+
+**Terminal**
+
+Generated bash
+
+      `e2b sandbox logs <sandbox-id>`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+# Ready Command
+
+El comando de preparación te permite especificar un comando que determinará la preparación de la **plantilla del sandbox** antes de que se cree una [instantánea](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ftemplates%2Foverview%23how-it-works). Se ejecuta en un bucle infinito hasta que devuelve un código de salida exitoso **0**. De esta manera puedes controlar cuánto tiempo debemos esperar por el [comando de inicio](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ftemplates%2Fstart-command) o cualquier estado del sistema.
+
+## How to add ready command
+
+Cuando estás construyendo una plantilla de sandbox puedes especificar el comando de preparación usando la opción --ready-cmd:
+
+Generated bash
+
+      `e2b template build --ready-cmd "<your-ready-commands>"`
+
+## Sandbox template config
+
+Puedes especificar el comando de preparación también dentro del archivo e2b.toml en el mismo directorio donde ejecutas e2b template build.
+
+**e2b.toml**
+
+Generated toml
+
+      `# This is a config for E2B sandbox template
+template_id = "lwdqsf91e9qk21ztb4mo"
+dockerfile = "e2b.Dockerfile"
+template_name = "my-agent-sandbox"
+ready_cmd = "<your-ready-commands>"`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Toml
+
+IGNORE_WHEN_COPYING_END
+
+## Default values
+
+Por defecto, el comando de preparación está establecido en sleep 0, lo que significa que la plantilla del sandbox estará lista inmediatamente. Si se define el [comando de inicio](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ftemplates%2Fstart-command), el valor predeterminado se establece en sleep 20, lo que significa que la plantilla del sandbox esperará 20 segundos antes de tomar la instantánea.
+
+## Examples
+
+Aquí hay algunos ejemplos del comando de preparación que puedes usar.
+
+### Wait for URL to return 200 status code
+
+Generated bash
+
+      `ready_cmd = 'curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200"'`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+### Wait for a specific process to start
+
+Generated bash
+
+      `ready_cmd = 'pgrep my-process-name > /dev/null'`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+### Wait for a file to exist
+
+Generated bash
+
+      `ready_cmd = '[ -f /tmp/ready.flag ]'`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+# Customize sandbox CPU & RAM
+
+Puedes personalizar la CPU y la RAM de tu plantilla de sandbox a través de la CLI de E2B.
+
+Necesitarás crear una [plantilla de sandbox](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ftemplates%2Foverview) primero.
+
+Durante el paso de construcción, puedes especificar la CPU y la RAM de tu plantilla de sandbox.
+
+El siguiente comando creará una plantilla de sandbox con 2 CPUs y 2GB de RAM.
+
+**Terminal**
+
+Generated bash
+
+      `e2b template build -c "/root/.jupyter/start-up.sh" --cpu-count 2 --memory-mb 2048`
+
+# Filesystem
+
+Cada Sandbox de E2B tiene su propio sistema de archivos aislado. Los sandboxes del [nivel Hobby](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Fpricing%23hobby-tier) vienen con 1 GB de espacio en disco libre y los sandboxes del [nivel Pro](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Fpricing%23pro-tier) vienen con 5 GB.
+
+Con el SDK de E2B puedes:
+
+- [Leer y escribir archivos en el sandbox](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ffilesystem%2Fread-and-write).
+- [Observar un directorio para detectar cambios](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ffilesystem%2Fwatch-directory).
+- [Subir datos al sandbox](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ffilesystem%2Fupload-data).
+- [Descargar datos del sandbox](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ffilesystem%2Fdownload-data).
+
+# Read & write files
+
+## Reading files
+
+Puedes leer archivos del sistema de archivos del sandbox usando el método files.read().
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+const fileContent = await sandbox.files.read('/path/to/file')`
+
+## Writing single files
+
+Puedes escribir archivos individuales en el sistema de archivos del sandbox usando el método files.write().
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+await sandbox.files.write('/path/to/file', 'file content')`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Writing multiple files
+
+También puedes escribir múltiples archivos en el sistema de archivos del sandbox usando el método files.write().
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+
+await sandbox.files.write([
+  { path: '/path/to/a', data: 'file content' },
+  { path: '/another/path/to/b', data: 'file content' }
+])`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+# Watch sandbox directory for changes
+
+Puedes observar un directorio para detectar cambios usando el método files.watchDir() en JavaScript y files.watch_dir() en Python.
+
+> ℹ️ Dado que los eventos se rastrean de forma asíncrona, su entrega puede retrasarse. Se recomienda no recoger o cerrar el observador inmediatamente después de realizar un cambio.
+> 
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox, FilesystemEventType } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+const dirname = '/home/user'
+
+// Empezar a observar el directorio para detectar cambios
+const handle = await sandbox.files.watchDir(dirname, async (event) => {
+  console.log(event)
+  if (event.type === FilesystemEventType.WRITE) {
+    console.log(`wrote to file ${event.name}`)
+  }
+})
+
+// Disparar evento de escritura de archivo
+await sandbox.files.write(`${dirname}/my-file`, 'hello')`
+
+## Recursive Watching
+
+Puedes habilitar la observación recursiva usando el parámetro recursive.
+
+> ℹ️ Al crear nuevas carpetas rápidamente (por ejemplo, rutas de carpetas profundamente anidadas), los eventos que no sean CREATE podrían no emitirse. Para evitar este comportamiento, crea la estructura de carpetas requerida con antelación.
+> 
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox, FilesystemEventType } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+const dirname = '/home/user'
+
+// Empezar a observar el directorio para detectar cambios
+const handle = await sandbox.files.watchDir(dirname, async (event) => {
+  console.log(event)
+  if (event.type === FilesystemEventType.WRITE) {
+    console.log(`wrote to file ${event.name}`)
+  }
+}, {
+  recursive: true
+})
+
+// Disparar evento de escritura de archivo
+await sandbox.files.write(`${dirname}/my-folder/my-file`, 'hello')`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+# Upload data to sandbox
+
+Puedes subir datos al sandbox usando el método files.write().
+
+## Upload single file
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import fs from 'fs'
+import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+
+// Leer archivo del sistema de archivos local
+const content = fs.readFileSync('/local/path')
+// Subir archivo al sandbox
+await sandbox.files.write('/path/in/sandbox', content)`
+
+## Upload with pre-signed URL
+
+A veces, quieres permitir que los usuarios desde entornos no autorizados, como un navegador, suban archivos al sandbox. Para este caso de uso, puedes usar URLs pre-firmadas para permitir que los usuarios suban archivos de forma segura.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import fs from 'fs'
+import { Sandbox } from '@e2b/code-interpreter'
+
+// Iniciar un sandbox seguro (todas las operaciones deben ser autorizadas por defecto)
+const sandbox = await Sandbox.create(template, { secure: true })
+
+// Crear una URL pre-firmada para la subida de archivos con una expiración de 10 segundos
+const publicUploadUrl = await sandbox.uploadUrl(
+  'demo.txt',
+  {
+    useSignature: true,
+    useSignatureExpiration: 10_000, // opcional
+  },
+)
+
+// Subir un archivo con una URL pre-firmada (esto se puede usar en cualquier entorno, como un navegador)
+const form = new FormData()
+form.append('file', 'file content')
+
+await fetch(publicUploadUrl, { method: 'POST', body: form })
+
+// El archivo ahora está disponible en el sandbox y puedes leerlo
+const content = fs.readFileSync('demo.txt')`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+## Upload directory / multiple files
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `const fs = require('fs');
+const path = require('path');
+import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+
+// Leer todos los archivos en el directorio y almacenar sus rutas y contenidos en un array
+const readDirectoryFiles = (directoryPath) => {
+  // Leer todos los archivos en el directorio local
+  const files = fs.readdirSync(directoryPath);
+
+  // Mapear archivos a objetos con ruta y datos
+  const filesArray = files
+    .filter(file => {
+      const fullPath = path.join(directoryPath, file);
+      // Omitir si es un directorio
+      return fs.statSync(fullPath).isFile();
+    })
+    .map(file => {
+      const filePath = path.join(directoryPath, file);
+      // Leer el contenido de cada archivo
+      return {
+        path: filePath,
+        data: fs.readFileSync(filePath, 'utf8')
+      };
+    });
+
+  return filesArray;
+};
+
+// Ejemplo de uso
+const files = readDirectoryContents('/local/dir');
+console.log(files);
+// [
+//   { path: '/local/dir/file1.txt', data: 'File 1 contents...' },
+//   { path: '/local/dir/file2.txt', data: 'File 2 contents...' },
+//   // ...
+// ]
+
+await sandbox.files.write(files)`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+# Download data from sandbox
+
+Puedes descargar datos del sandbox usando el método files.read().
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import fs from 'fs'
+import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+
+// Leer archivo del sandbox
+const content = await sandbox.files.read('/path/in/sandbox')
+// Escribir archivo en el sistema de archivos local
+fs.writeFileSync('/local/path', content)`
+
+## Download with pre-signed URL
+
+A veces, es posible que desees permitir que usuarios de entornos no autorizados, como un navegador, descarguen archivos del sandbox. Para este caso de uso, puedes utilizar URLs pre-firmadas para permitir que los usuarios descarguen archivos de forma segura.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import fs from 'fs'
+import { Sandbox } from '@e2b/code-interpreter'
+
+// Iniciar un sandbox seguro (todas las operaciones deben estar autorizadas por defecto)
+const sandbox = await Sandbox.create(template, { secure: true })
+
+// Crear una URL pre-firmada para la descarga de archivos con una expiración de 10 segundos
+const publicUrl = await sandbox.downloadUrl(
+  'demo.txt',
+  {
+    useSignature: true,
+    useSignatureExpiration: 10_000, // opcional
+  }
+)
+
+// Descargar un archivo con una URL pre-firmada (esto se puede usar en cualquier entorno, como un navegador)
+const res = await fetch(publicUrl)
+const content = await res.text()`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). JavaScript
+
+IGNORE_WHEN_COPYING_END
+
+# Running commands in sandbox
+
+Puedes ejecutar comandos de terminal dentro del sandbox usando el método commands.run().
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+const result = await sandbox.commands.run('ls -l')
+console.log(result)`
+
+# Streaming command output
+
+Para transmitir la salida de un comando a medida que se ejecuta, pasa los callbacks onStdout, onStderr al método commands.run() en JavaScript o los callbacks on_stdout, on_stderr al método commands.run() en Python.
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+const result = await sandbox.commands.run('echo hello; sleep 1; echo world', {
+  onStdout: (data) => {
+    console.log(data)
+  },
+  onStderr: (data) => {
+    console.log(data)
+  },
+})
+
+console.log(result)`
+
+# Running commands in background
+
+Para ejecutar comandos en segundo plano, pasa la opción background al método commands.run(). Esto retornará inmediatamente y el comando continuará ejecutándose en el sandbox. Posteriormente, puedes terminar el comando usando el método commands.kill().
+
+**JavaScript & TypeScript**
+
+Generated javascript
+
+      `import { Sandbox } from '@e2b/code-interpreter'
+
+const sandbox = await Sandbox.create()
+
+// Iniciar el comando en segundo plano
+const command = await sandbox.commands.run('echo hello; sleep 10; echo world', {
+  background: true,
+  onStdout: (data) => {
+    console.log(data)
+  },
+})
+
+// Terminar el comando
+await command.kill()`
+
+# E2B CLI
+
+E2B CLI es una herramienta de línea de comandos que te permite listar, terminar sandboxes en ejecución y gestionar [plantillas de sandbox](https://www.google.com/url?sa=E&q=https%3A%2F%2Fe2b.dev%2Fdocs%2Ftemplates%2Foverview).
+
+## Installation
+
+### Using Homebrew (on macOS)
+
+**Terminal**
+
+Generated bash
+
+      `brew install e2b`
+
+### Using NPM
+
+Puedes instalar la CLI de E2B usando el siguiente comando:
+
+**Terminal**
+
+Generated bash
+
+      `npm i -g @e2b/cli`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+### Beta CLI
+
+La última versión beta de la CLI se puede instalar desde NPM usando el siguiente comando:
+
+**Terminal**
+
+Generated bash
+
+      `npm i -g @e2b/cli@beta`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+# Authentication in CLI
+
+Debes autenticarte con la CLI de E2B antes de usarla. Ejecuta el siguiente comando para iniciar sesión en tu cuenta de E2B:
+
+**Terminal**
+
+Generated bash
+
+      `e2b auth login`
+
+# List sandboxes
+
+Puedes listar todos los sandboxes en ejecución usando el siguiente comando:
+
+**Terminal**
+
+Generated bash
+
+      `e2b sandbox list`
+
+---
+
+## Changes in the Beta CLI
+
+> ℹ️ Si estás usando la versión beta de la CLI, el comando sandbox list fue actualizado.
+> 
+
+### List all sandboxes
+
+Para listar todos los sandboxes, usa el siguiente comando:
+
+Generated bash
+
+      `e2b sandbox list`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+Esto devolverá todos los sandboxes, tanto en ejecución como pausados.
+
+### Filter by state
+
+Para filtrar los sandboxes por su estado puedes especificar la bandera --state, que puede ser running, paused o ambos.
+
+Generated bash
+
+      `e2b sandbox list --state running,paused`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+### Filter by metadata
+
+Para filtrar los sandboxes por sus metadatos, usa la bandera --metadata.
+
+Generated bash
+
+      `e2b sandbox list --metadata key1=value1,key2=value2`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+### List limit
+
+Para limitar la cantidad de sandboxes devueltos por el comando, usa la bandera --limit.
+
+Generated bash
+
+      `e2b sandbox list --limit 10`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+Por defecto, el comando devolverá todos los sandboxes.
+
+# Shutdown running sandboxes
+
+Puedes apagar uno o todos los sandboxes en ejecución con la CLI de E2B.
+
+## Shutdown single sandbox
+
+Para apagar un solo sandbox, ejecuta el siguiente comando:
+
+**Terminal**
+
+Generated bash
+
+      `e2b sandbox kill <sandbox-id>`
+
+## Shutdown all sandboxes
+
+Para apagar todos los sandboxes en ejecución, ejecuta el siguiente comando:
+
+**Terminal**
+
+Generated bash
+
+      `e2b sandbox kill --all`
+
+IGNORE_WHEN_COPYING_START
+
+content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+
+IGNORE_WHEN_COPYING_END
+
+# Docker push authentication error
+
+Cuando la CLI intenta enviar una imagen de Docker al registro, es posible que encuentres un error de autenticación. Este error a veces ocurre para los usuarios cuando Docker no envía ninguna credencial al registro. Para resolver este problema, puedes usar los siguientes pasos:
+
+## MacOS
+
+1. Abre Docker Desktop.
+2. Ve a Configuración.
+3. Ve a Docker Engine.
+4. Agrega la siguiente línea a la configuración JSON:Generated jsonGenerated json
+    
+          `{
+      "insecure-registries": ["host.docker.internal:49984"]
+    }`
+    
+    Puede verse así:
+    
+          `{
+      "builder": {
+        "gc": {
+          "defaultKeepStorage": "20GB",
+          "enabled": true
+        }
+      },
+      "features": {
+        "buildkit": true
+      },
+      "insecure-registries": [
+        "host.docker.internal:49984"
+      ]
+    }`
+    
+    IGNORE_WHEN_COPYING_START
+    
+    content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Json
+    
+    IGNORE_WHEN_COPYING_END
+    
+    Esto permite que Docker envíe solicitudes al proxy local, que maneja la autenticación.
+    
+5. Haz clic en Aplicar y Reiniciar.
+
+## Linux
+
+1. Edita el archivo de configuración de Docker (generalmente /etc/docker/daemon.json) y agrega la siguiente línea, si el archivo no existe, créalo:Generated json
+    
+          `{
+      "insecure-registries": ["localhost:49984"]
+    }`
+    
+    IGNORE_WHEN_COPYING_START
+    
+    content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Json
+    
+    IGNORE_WHEN_COPYING_END
+    
+2. Reinicia Docker:Generated bash
+    
+          `sudo systemctl restart docker`
+    
+    IGNORE_WHEN_COPYING_START
+    
+    content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Bash
+    
+    IGNORE_WHEN_COPYING_END
+    
+
+## Windows
+
+1. Abre Docker Desktop.
+2. Ve a Configuración.
+3. Ve a Docker Engine.
+4. Agrega la siguiente línea a la configuración JSON:Generated json
+    
+          `{
+      "insecure-registries": ["host.docker.internal:49984"]
+    }`
+    
+    IGNORE_WHEN_COPYING_START
+    
+    content_copy  download  Use code [with caution](https://support.google.com/legal/answer/13505487). Json
+    
+    IGNORE_WHEN_COPYING_END
+    
+5. Haz clic en Aplicar y Reiniciar.

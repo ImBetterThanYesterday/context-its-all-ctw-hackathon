@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rappi Creator - Convierte tu PRD en pantallas funcionales</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Polyfill for CommonJS compatibility
+      if (typeof exports === 'undefined') {
+        window.exports = {};
+      }
+      if (typeof module === 'undefined') {
+        window.module = { exports: {} };
+      }
+      if (typeof process === 'undefined') {
+        window.process = { env: {} };
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
