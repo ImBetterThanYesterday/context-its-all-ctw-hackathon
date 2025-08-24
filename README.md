@@ -8,6 +8,7 @@ Context is all es una plataforma de desarrollo de IU de vanguardia diseñada par
 
 Su nombre, "Context is all", refleja su capacidad para utilizar inteligentemente el contexto completo de un proyecto —documentos, historial de chat y guías de diseño— para generar resultados de alta fidelidad.
 
+
 ✨ Características Principales
 
 🤖 Generación de UI por IA: Describe tu interfaz o sube un documento y observa cómo la IA construye tu aplicación en tiempo real.
