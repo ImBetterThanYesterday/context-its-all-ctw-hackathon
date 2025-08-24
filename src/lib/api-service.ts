@@ -1,5 +1,5 @@
 // Frontend API service to communicate with backend
-const API_BASE_URL = 'http://localhost:3001'
+import { apiConfig, buildApiUrl } from '@/config/api-config'
 
 export interface GenerateWebAppRequest {
   prompt: string
@@ -45,7 +45,7 @@ export interface GeminiProcessResponse {
 class ApiService {
   
   async healthCheck(): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/health`)
+    const response = await fetch(buildApiUrl(apiConfig.endpoints.health))
     if (!response.ok) {
       throw new Error(`Health check failed: ${response.status}`)
     }
@@ -59,7 +59,7 @@ class ApiService {
     try {
       onProgress?.('🚀 Enviando solicitud al servidor...')
       
-      const response = await fetch(`${API_BASE_URL}/api/e2b/generate`, {
+      const response = await fetch(buildApiUrl(apiConfig.endpoints.e2b.generate), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ class ApiService {
       console.error('❌ API Error:', error)
       
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('No se pudo conectar con el servidor. Asegúrate de que el servidor backend esté ejecutándose en http://localhost:3001')
+        throw new Error(`No se pudo conectar con el servidor. Asegúrate de que el servidor backend esté ejecutándose en ${apiConfig.baseUrl}`)
       }
       
       throw error
@@ -89,7 +89,7 @@ class ApiService {
   }
 
   async createSandbox(): Promise<{ sandboxId: string }> {
-    const response = await fetch(`${API_BASE_URL}/api/e2b/sandbox`, {
+    const response = await fetch(buildApiUrl(apiConfig.endpoints.e2b.sandbox), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ class ApiService {
   }
 
   async listSandboxes(): Promise<SandboxInfo[]> {
-    const response = await fetch(`${API_BASE_URL}/api/e2b/sandboxes`)
+    const response = await fetch(buildApiUrl(apiConfig.endpoints.e2b.sandboxes))
     
     if (!response.ok) {
       throw new Error(`Failed to list sandboxes: ${response.status}`)
@@ -117,7 +117,7 @@ class ApiService {
   }
 
   async killSandbox(sandboxId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/e2b/sandbox/${sandboxId}`, {
+    const response = await fetch(buildApiUrl(apiConfig.endpoints.e2b.delete(sandboxId)), {
       method: 'DELETE',
     })
 
@@ -135,7 +135,7 @@ class ApiService {
     try {
       onProgress?.('🔄 Modificando sandbox existente...')
       
-      const response = await fetch(`${API_BASE_URL}/api/e2b/modify/${sandboxId}`, {
+      const response = await fetch(buildApiUrl(apiConfig.endpoints.e2b.modify(sandboxId)), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ class ApiService {
       console.error('❌ Sandbox Modification API Error:', error)
       
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('No se pudo conectar con el servidor. Asegúrate de que el servidor backend esté ejecutándose en http://localhost:3001')
+        throw new Error(`No se pudo conectar con el servidor. Asegúrate de que el servidor backend esté ejecutándose en ${apiConfig.baseUrl}`)
       }
       
       throw error
@@ -185,7 +185,7 @@ class ApiService {
         customPrompt
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/gemini/process-document`, {
+      const response = await fetch(buildApiUrl(apiConfig.endpoints.gemini.processDocument), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ class ApiService {
       console.error('❌ Gemini API Error:', error)
       
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('No se pudo conectar con el servidor. Asegúrate de que el servidor backend esté ejecutándose en http://localhost:3001')
+        throw new Error(`No se pudo conectar con el servidor. Asegúrate de que el servidor backend esté ejecutándose en ${apiConfig.baseUrl}`)
       }
       
       throw error
@@ -228,7 +228,7 @@ class ApiService {
         conversationHistory: conversationHistory || []
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/gemini/chat`, {
+      const response = await fetch(buildApiUrl(apiConfig.endpoints.gemini.chat), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -251,7 +251,7 @@ class ApiService {
       console.error('❌ Gemini Chat API Error:', error)
       
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('No se pudo conectar con el servidor. Asegúrate de que el servidor backend esté ejecutándose en http://localhost:3001')
+        throw new Error(`No se pudo conectar con el servidor. Asegúrate de que el servidor backend esté ejecutándose en ${apiConfig.baseUrl}`)
       }
       
       throw error

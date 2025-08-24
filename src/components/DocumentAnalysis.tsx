@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Upload, FileText, X, Bot, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiService } from '@/lib/api-service';
+import { buildApiUrl, apiConfig } from '@/config/api-config';
 
 interface DocumentAnalysisProps {
   onAnalysisComplete: (screens: any[]) => void;
@@ -122,7 +123,7 @@ Responde únicamente con el análisis y prompt optimizado, sin explicaciones adi
 
       console.log('📤 Enviando datos procesados a Claude para análisis...');
       
-      const response = await fetch('http://localhost:3001/api/analyze-document', {
+      const response = await fetch(buildApiUrl(apiConfig.endpoints.analyzeDocument), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,11 +1,12 @@
 // Frontend-only Claude SDK wrapper that calls backend API
+import { buildApiUrl, apiConfig } from '@/config/api-config'
 
 export async function buildWithClaude(prompt: string): Promise<void> {
   try {
     console.log(`🚀 Starting Claude Code generation for: "${prompt}"`);
     console.log("=".repeat(50));
     
-    const response = await fetch('http://localhost:3001/api/e2b/generate', {
+    const response = await fetch(buildApiUrl(apiConfig.endpoints.e2b.generate), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
