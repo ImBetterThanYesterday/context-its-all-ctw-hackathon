@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(find:*)",
+      "Bash(npm install)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm install:*)",
+      "Bash(rm:*)",
+      "Bash(npm run lint)",
+      "Bash(cp:*)",
+      "Bash(touch:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:e2b.dev)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx tsx:*)",
+      "Bash(curl:*)",
+      "Bash(timeout 5 npx tsx server.ts)",
+      "Bash(npm run server:*)",
+      "Bash(chmod:*)",
+      "Bash(true)",
+      "Bash(timeout 10s npm run dev:*)",
+      "Bash(kill:*)",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(node:*)",
+      "Bash(npx eslint:*)",
+      "WebFetch(domain:www.philschmid.de)"
+    ],
+    "deny": []
+  }
+}
